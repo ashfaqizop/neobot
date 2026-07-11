@@ -8,6 +8,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 3 — Behavior engine core.** Pluggable anti-AFK activity:
+  - `AFKBehavior` plugin contract + registry (`src/bot/behaviors/`), so new
+    behaviors register without touching core logic.
+  - Behaviors: `walk` (organic control-state walking), `jumpLook`,
+    `pathfindRandom` (pathfinder to a random point in the safe-zone), and `chat`
+    (off by default).
+  - Human-like movement imperfection layer (`humanize.ts`): micro-pauses,
+    jitter, varied speed, weighted selection, random reachable points.
+  - `BehaviorEngine` scheduler with humanized cycle timing and anti-repeat
+    behavior selection (breaks the movement *sequences* modern anti-cheats
+    match, not just timing).
+  - **Always-on player-presence pause** (`playerPresence.ts`): when a real
+    player enters the configured radius, all activity stops and resumes when
+    clear — a safety default, not a toggle.
+  - Current behavior surfaces as `/status.json` `currentActivity`.
+  - New env: `PLAYER_PROXIMITY_RADIUS`, `CHAT_ENABLED`, `CHAT_MESSAGES`.
+  - Fleshed-out `docs/BEHAVIOR_MODULE_GUIDE.md` with the real contract + example.
+
 - **Phase 2 — Core connection MVP.** The deployable keep-alive:
   - `ConnectionManager` (`src/bot/connection.ts`): connects one Mineflayer bot
     (offline auth, auto version detection with fail-fast on unsupported), with

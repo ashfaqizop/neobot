@@ -33,6 +33,7 @@
   "dependencies": {
     "express": "^4.22.2",
     "mineflayer": "^4.37.1",
+    "mineflayer-pathfinder": "^2.4.5",
     "pino": "^9.5.0",
     "zod": "^3.24.1"
   },

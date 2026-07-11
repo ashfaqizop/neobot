@@ -55,6 +55,14 @@ const envSchema = z.object({
   SAFE_ZONE_Z: z.coerce.number().optional(),
   SAFE_ZONE_RADIUS: z.coerce.number().nonnegative().default(32),
 
+  // --- Behavior engine (masterdoc §7) ---
+  /** Real players within this radius pause all activity (always-on safety). */
+  PLAYER_PROXIMITY_RADIUS: z.coerce.number().nonnegative().default(16),
+  /** Chat behavior is off by default (safest for real servers). */
+  CHAT_ENABLED: booleanish.default('false'),
+  /** Optional comma-separated chat message pool. */
+  CHAT_MESSAGES: z.string().optional(),
+
   // --- Keep-alive (masterdoc §10). Self-ping default OFF. ---
   SELF_PING_ENABLED: booleanish.default('false'),
   SELF_PING_URL: z.string().url().optional(),

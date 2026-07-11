@@ -13,6 +13,10 @@
  */
 import type { EventEmitter } from 'node:events';
 import { createBot } from 'mineflayer';
+import pathfinderPkg from 'mineflayer-pathfinder';
+
+// CommonJS module — destructure from the default export for native Node ESM.
+const { pathfinder } = pathfinderPkg;
 import { childLogger } from '../lib/logger.js';
 import { env } from '../config/env.js';
 import { computeBackoff } from './backoff.js';
@@ -57,6 +61,10 @@ export interface ConnectionManagerOptions {
   onAlert?: (event: AlertEvent) => void;
   /** Anti-cheat dial-back hook (Phase 9 Safe Mode). Defaults to a log. */
   onAntiCheat?: () => void;
+  /** Called with the live bot once it spawns (Phase 3 behavior engine start). */
+  onBotReady?: (bot: BotLike) => void;
+  /** Called when the bot disconnects (behavior engine stop). */
+  onBotEnd?: () => void;
 }
 
 /** Default config provider: reads the environment (masterdoc §6). */
@@ -70,14 +78,18 @@ const defaultGetConfig = (): BotConnectOptions | null => {
   };
 };
 
-const defaultBotFactory = (opts: BotConnectOptions): BotLike =>
-  createBot({
+const defaultBotFactory = (opts: BotConnectOptions): BotLike => {
+  const bot = createBot({
     host: opts.host,
     port: opts.port,
     username: opts.username,
     auth: 'offline',
     ...(opts.version ? { version: opts.version } : {}),
   });
+  // Load pathfinder so movement behaviors (Phase 3) can navigate.
+  bot.loadPlugin(pathfinder);
+  return bot;
+};
 
 /** Flatten a kick reason (ChatMessage | string | object) to plain text. */
 function flattenReason(reason: unknown): string {
@@ -111,6 +123,8 @@ export class ConnectionManager {
   private readonly longRetryMs: number;
   private readonly onAlert: (event: AlertEvent) => void;
   private readonly onAntiCheat: () => void;
+  private readonly onBotReady: (bot: BotLike) => void;
+  private readonly onBotEnd: () => void;
 
   private bot: BotLike | null = null;
   private attempt = 0;
@@ -136,6 +150,8 @@ export class ConnectionManager {
     this.onAntiCheat =
       opts.onAntiCheat ??
       (() => log.warn('Anti-cheat kick detected — Safe Mode dial-back arrives in Phase 9'));
+    this.onBotReady = opts.onBotReady ?? (() => undefined);
+    this.onBotEnd = opts.onBotEnd ?? (() => undefined);
   }
 
   /** Begin connecting. Safe to call once at startup. */
@@ -196,6 +212,7 @@ export class ConnectionManager {
     this.state.recordSessionStart();
     this.state.setStatus('connected', 'idle');
     log.info('Connected to Minecraft server');
+    if (this.bot) this.onBotReady(this.bot);
   }
 
   private handleEnd(endReason: string, config: BotConnectOptions): void {
@@ -206,6 +223,7 @@ export class ConnectionManager {
     if (this.connected) {
       this.connected = false;
       this.state.recordSessionEnd(reason);
+      this.onBotEnd();
     }
 
     if (this.stopped) return;
@@ -299,6 +317,7 @@ export class ConnectionManager {
       }
       this.teardownBot();
     }
+    if (this.connected) this.onBotEnd();
     this.connected = false;
     this.state.setStatus('disconnected', null);
     log.info('Connection manager stopped');

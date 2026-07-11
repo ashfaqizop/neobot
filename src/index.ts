@@ -10,20 +10,29 @@
  * dashboard + Socket.IO (P6–7), Discord (P8), and the watchdog (P9).
  */
 import type { Server } from 'node:http';
+import type { Bot } from 'mineflayer';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { LiveStateStore } from './bot/state.js';
 import { ConnectionManager } from './bot/connection.js';
+import { BehaviorEngine } from './bot/behaviorEngine.js';
+import { buildDefaultConfig } from './bot/behaviorConfig.js';
 import { createApp, startServer } from './server/app.js';
 
 function main(): void {
   logger.info(
     { nodeEnv: env.NODE_ENV, port: env.PORT, version: process.env.npm_package_version ?? '0.1.0' },
-    'NeoBot starting (Phase 2 — core connection MVP)',
+    'NeoBot starting (Phase 3 — behavior engine)',
   );
 
   const state = new LiveStateStore();
-  const connection = new ConnectionManager(state);
+  const behaviorConfig = buildDefaultConfig(env);
+  const engine = new BehaviorEngine(state, behaviorConfig);
+  const connection = new ConnectionManager(state, {
+    // Run the anti-AFK behavior engine only while the bot is spawned.
+    onBotReady: (bot) => engine.start(bot as unknown as Bot),
+    onBotEnd: () => engine.stop(),
+  });
   const app = createApp({ state });
   const server: Server = startServer(app, env.PORT);
 
@@ -35,6 +44,7 @@ function main(): void {
     if (shuttingDown) return;
     shuttingDown = true;
     logger.info({ signal }, 'Shutting down NeoBot');
+    engine.stop();
     connection.stop();
     server.close(() => {
       logger.info('HTTP server closed');

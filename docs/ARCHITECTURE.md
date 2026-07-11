@@ -16,6 +16,9 @@ multi-server management inside a single instance.
 | Kick-reason classifier | `src/bot/kickReasons.ts` | 2 ✅ |
 | Live-state store (in-memory) | `src/bot/state.ts` | 2 ✅ |
 | Health/status server | `src/server/app.ts`, `src/server/routes/status.ts` | 2 ✅ |
+| Behavior engine + scheduler | `src/bot/behaviorEngine.ts` | 3 ✅ |
+| Pluggable behaviors + humanize | `src/bot/behaviors/` | 3 ✅ |
+| Player-presence pause | `src/bot/playerPresence.ts` | 3 ✅ |
 | Behavior engine | `src/bot/behaviors/` | 3–4 |
 | Hazards / safe mode / hibernation | `src/bot/` | 4, 9 |
 | Persistence (Supabase) | `src/db/` | 5 |
