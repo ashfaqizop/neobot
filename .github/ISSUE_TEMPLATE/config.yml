@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/ashfaqizop/neobot/security/advisories/new
+    about: Please report security issues privately, not as a public issue. See SECURITY.md.
+  - name: Question / discussion
+    url: https://github.com/ashfaqizop/neobot/discussions
+    about: Ask questions and discuss NeoBot with the community.

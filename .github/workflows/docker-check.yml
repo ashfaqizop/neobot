@@ -1,0 +1,28 @@
+name: Docker Build Check
+
+# Verifies the Dockerfile builds cleanly. The image is intentionally NOT pushed
+# to any registry in v1 (masterdoc §3, §14) — this is a build-only smoke check.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docker:
+    name: Build image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: neobot:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

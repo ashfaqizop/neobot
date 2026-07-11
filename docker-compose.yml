@@ -1,0 +1,19 @@
+# Optional local / prod-parity run (masterdoc §4, §15).
+# This is NOT published to a registry in v1 — it exists so contributors can run
+# NeoBot exactly as it runs in production. Configuration comes from a local
+# `.env` file (copy `.env.example` -> `.env` first).
+services:
+  neobot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: neobot:local
+    container_name: neobot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - '3000:3000'
