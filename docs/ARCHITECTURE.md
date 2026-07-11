@@ -12,7 +12,10 @@ multi-server management inside a single instance.
 
 | Subsystem | Location | Phase |
 |---|---|---|
-| Connection manager | `src/bot/connection.ts` | 2 |
+| Connection manager + reconnect | `src/bot/connection.ts` | 2 ✅ |
+| Kick-reason classifier | `src/bot/kickReasons.ts` | 2 ✅ |
+| Live-state store (in-memory) | `src/bot/state.ts` | 2 ✅ |
+| Health/status server | `src/server/app.ts`, `src/server/routes/status.ts` | 2 ✅ |
 | Behavior engine | `src/bot/behaviors/` | 3–4 |
 | Hazards / safe mode / hibernation | `src/bot/` | 4, 9 |
 | Persistence (Supabase) | `src/db/` | 5 |

@@ -81,7 +81,7 @@ are added in Phase 10. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 NeoBot is built phase by phase (see [`masterdoc (2).md`](<masterdoc (2).md>) §18):
 
 - [x] **Phase 1 — Scaffolding**: repo structure, toolchain, CI, Docker, OSS hygiene
-- [ ] Phase 2 — Core connection MVP + `/status.json`
+- [x] **Phase 2 — Core connection MVP**: connection manager, kick-reason parsing, reconnect/backoff, public `/status.json`
 - [ ] Phase 3 — Behavior engine core
 - [ ] Phase 4 — Extended behaviors + hazards
 - [ ] Phase 5 — Supabase persistence
