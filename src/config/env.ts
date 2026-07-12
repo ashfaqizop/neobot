@@ -72,6 +72,10 @@ const envSchema = z.object({
   // --- Keep-alive (masterdoc §10). Self-ping default OFF. ---
   SELF_PING_ENABLED: booleanish.default('false'),
   SELF_PING_URL: z.string().url().optional(),
+
+  // --- Dashboard sessions (masterdoc §8.2). Auto-generated if unset (sessions
+  // then reset on restart); set a stable value in production. ---
+  SESSION_SECRET: z.string().min(1).optional(),
 });
 
 /** Fully-resolved, validated environment configuration. */

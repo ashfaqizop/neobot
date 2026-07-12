@@ -24,6 +24,10 @@ multi-server management inside a single instance.
 | Hazard self-preservation | `src/bot/hazards.ts` | 4 ✅ |
 | Persistence (Supabase + in-memory) | `src/db/` | 5 ✅ |
 | Persisted app config | `src/config/appConfig.ts` | 5 ✅ |
+| Dashboard API + auth + rate limit | `src/server/` | 6 ✅ |
+| Setup wizard | `src/server/setupWizard.ts` | 6 ✅ |
+| Control seam (pause/restart/…) | `src/bot/controller.ts` | 6 ✅ |
+| Socket.IO live bridge | `src/server/socket.ts` | 6 ✅ |
 | Behavior engine | `src/bot/behaviors/` | 3–4 |
 | Hazards / safe mode / hibernation | `src/bot/` | 4, 9 |
 | Persistence (Supabase) | `src/db/` | 5 |

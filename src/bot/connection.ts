@@ -157,6 +157,7 @@ export class ConnectionManager {
   /** Begin connecting. Safe to call once at startup. */
   start(): void {
     this.stopped = false;
+    this.attempt = 0;
     const config = this.getConfig();
     if (!config) {
       log.warn(
@@ -321,5 +322,18 @@ export class ConnectionManager {
     this.connected = false;
     this.state.setStatus('disconnected', null);
     log.info('Connection manager stopped');
+  }
+
+  /** Restart the connection subsystem (dashboard/Discord control, §11). */
+  restart(): void {
+    log.info('Restarting connection subsystem');
+    this.stop();
+    this.start();
+  }
+
+  /** Force an immediate reconnect attempt, cancelling any pending backoff (§11). */
+  reconnectNow(): void {
+    log.info('Forcing immediate reconnect');
+    this.restart();
   }
 }

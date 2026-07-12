@@ -220,6 +220,23 @@ describe('BehaviorEngine', () => {
     engine.stop();
   });
 
+  it('setManualPause suspends and resumes behaviors (masterdoc §11)', async () => {
+    const engine = new BehaviorEngine(state, makeConfig(), {
+      behaviors: [fakeBehavior('alpha')],
+      rng: () => 0.1,
+    });
+    engine.start(asBot(makeBot()));
+
+    engine.setManualPause(true);
+    expect(engine.isManuallyPaused()).toBe(true);
+    expect(await engine.runCycleOnce()).toBeNull();
+    expect(ran).not.toContain('alpha');
+
+    engine.setManualPause(false);
+    expect(await engine.runCycleOnce()).toBe('alpha');
+    engine.stop();
+  });
+
   it('stop() releases controls and goes idle', () => {
     const engine = new BehaviorEngine(state, makeConfig(), { behaviors: [fakeBehavior('alpha')] });
     const bot = makeBot();

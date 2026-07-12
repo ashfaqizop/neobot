@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/server/app.js';
-import { LiveStateStore } from '../src/bot/state.js';
+import { makeApiDeps } from './support/serverDeps.js';
 
 describe('status routes (public, no auth — masterdoc §10)', () => {
-  const state = new LiveStateStore();
-  const app = createApp({ state });
+  const deps = makeApiDeps();
+  const state = deps.state;
+  const app = createApp(deps);
 
   it('GET /status.json returns 200 and the §10 payload shape', async () => {
     const res = await request(app).get('/status.json');

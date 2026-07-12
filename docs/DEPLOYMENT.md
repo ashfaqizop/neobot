@@ -37,6 +37,24 @@ dashboard/setup wizard (Phase 6) instead. Secrets (`SUPABASE_KEY`,
 `DISCORD_BOT_TOKEN`) always stay in the environment and are never stored in the
 `config` table.
 
+## Dashboard API & auth
+
+The dashboard backend (Phase 6) serves under `/api/*`. On first boot, with no
+admin account yet, `GET /api/setup/status` reports `needsSetup: true`; submit the
+setup wizard (`POST /api/setup`) to create the admin and write config.
+
+Three independently toggleable auth layers (masterdoc §8.2):
+
+1. **Login/password** — required baseline (bcrypt-hashed admin). Sessions are
+   signed cookies; set `SESSION_SECRET` to a long random value so sessions
+   survive restarts (otherwise a fresh secret is generated each boot).
+2. **Token-URL** — optional shareable `?token=` access, enabled via the wizard.
+3. **IP allowlist** — optional "super-security" gate, applied on top of the rest.
+
+Login and the API are rate-limited (lockout after repeated failed logins).
+Secrets (`SUPABASE_KEY`, `DISCORD_BOT_TOKEN`) are **never** collected or stored by
+the wizard — set them in the environment.
+
 ## Render (planned)
 
 A one-click **Deploy to Render** button and a `render.yaml` Blueprint

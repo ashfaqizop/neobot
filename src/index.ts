@@ -19,9 +19,13 @@ import { logger } from './lib/logger.js';
 import { LiveStateStore } from './bot/state.js';
 import { ConnectionManager, type BotConnectOptions } from './bot/connection.js';
 import { BehaviorEngine } from './bot/behaviorEngine.js';
+import { BotController } from './bot/controller.js';
 import { createApp, startServer } from './server/app.js';
+import { attachSocket } from './server/socket.js';
+import type { ConfigHolder } from './server/deps.js';
 import { createRepositories } from './db/repositories/index.js';
 import { attachStatePersistence } from './db/statePersistence.js';
+import type { AppConfig } from './config/appConfig.js';
 
 /** Alert event keys seeded into `alert_settings` (masterdoc §11). */
 const ALERT_KEYS = [
@@ -52,7 +56,7 @@ function connectOptions(conn: ConnectionConfig): BotConnectOptions | null {
 async function main(): Promise<void> {
   logger.info(
     { nodeEnv: env.NODE_ENV, port: env.PORT, version: process.env.npm_package_version ?? '0.1.0' },
-    'NeoBot starting (Phase 5 — persistence layer)',
+    'NeoBot starting (Phase 6 — dashboard backend)',
   );
 
   // Persistence: Supabase when configured, else in-memory (zero-cred boot).
@@ -60,7 +64,15 @@ async function main(): Promise<void> {
   await repos.alertSettings.ensureDefaults(ALERT_KEYS);
 
   // Config: bootstrap from env on first run, then Supabase is source of truth.
-  const appConfig = await repos.config.getOrBootstrap(buildDefaultAppConfig(env));
+  // A mutable holder lets the dashboard (PUT /api/config) update it live.
+  const initialConfig = await repos.config.getOrBootstrap(buildDefaultAppConfig(env));
+  let currentConfig: AppConfig = initialConfig;
+  const configHolder: ConfigHolder = {
+    get: () => currentConfig,
+    set: (c) => {
+      currentConfig = c;
+    },
+  };
 
   // Live state: restore the last snapshot so the dashboard survives a restart.
   const state = new LiveStateStore();
@@ -71,9 +83,9 @@ async function main(): Promise<void> {
   }
   attachStatePersistence(state, repos);
 
-  const engine = new BehaviorEngine(state, appConfig.behavior);
+  const engine = new BehaviorEngine(state, initialConfig.behavior);
   const connection = new ConnectionManager(state, {
-    getConfig: () => connectOptions(appConfig.connection),
+    getConfig: () => connectOptions(currentConfig.connection),
     onBotReady: (bot) => engine.start(bot as unknown as Bot),
     onBotEnd: () => engine.stop(),
     onAlert: (event) => {
@@ -83,9 +95,11 @@ async function main(): Promise<void> {
         .catch((err: unknown) => logger.warn({ err }, 'events.append failed'));
     },
   });
+  const controller = new BotController(connection, engine, state);
 
-  const app = createApp({ state });
+  const app = createApp({ state, repos, controller, config: configHolder });
   const server: Server = startServer(app, env.PORT);
+  attachSocket(server, { state, getConfig: () => currentConfig });
 
   connection.start();
 

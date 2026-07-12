@@ -86,6 +86,7 @@ export class BehaviorEngine {
   private bot: Bot | null = null;
   private running = false;
   private paused = false;
+  private manualPaused = false;
   private hazard: HazardType | null = null;
   private lastBehaviorName: string | null = null;
   private cycleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -109,6 +110,7 @@ export class BehaviorEngine {
     this.running = true;
     this.paused = false;
     this.hazard = null;
+    // Preserve manualPaused across reconnects so an operator "pause" sticks.
     log.info({ behaviors: this.behaviors.map((b) => b.name) }, 'Behavior engine started');
 
     this.guardianTimer = setInterval(() => this.checkPresence(), GUARDIAN_INTERVAL_MS);
@@ -171,6 +173,12 @@ export class BehaviorEngine {
     // Hazard self-preservation outranks everything (masterdoc §6).
     if (this.hazard) {
       this.state.setActivity(`hazard: ${this.hazard}`);
+      return null;
+    }
+
+    // Manual pause (dashboard/Discord control) suspends all behaviors.
+    if (this.manualPaused) {
+      this.state.setActivity('paused: manual');
       return null;
     }
 
@@ -298,14 +306,30 @@ export class BehaviorEngine {
       config: this.config,
       rng: this.rng,
       sleep: (ms) => this.abortableSleep(ms),
-      shouldAbort: () => this.paused || this.hazard !== null || !this.running,
+      shouldAbort: () => this.paused || this.manualPaused || this.hazard !== null || !this.running,
     };
+  }
+
+  /** Manually pause/resume all behaviors (dashboard/Discord control, §11). */
+  setManualPause(paused: boolean): void {
+    this.manualPaused = paused;
+    if (paused) {
+      this.interrupt();
+      this.state.setActivity('paused: manual');
+      log.info('Behaviors manually paused');
+    } else {
+      log.info('Behaviors resumed');
+    }
+  }
+
+  isManuallyPaused(): boolean {
+    return this.manualPaused;
   }
 
   /** Sleep that resolves early when the engine pauses/stops. */
   private abortableSleep(ms: number): Promise<void> {
     return new Promise<void>((resolve) => {
-      if (this.paused || this.hazard !== null || !this.running) {
+      if (this.paused || this.manualPaused || this.hazard !== null || !this.running) {
         resolve();
         return;
       }

@@ -8,6 +8,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 6 — Dashboard backend.** The full server-side API for the dashboard
+  (the React UI arrives in Phase 7):
+  - **Three toggleable auth layers** (§8.2): login/password baseline (bcrypt
+    admin in `admin_users`, `node:crypto` HMAC session cookies), optional
+    token-URL, optional IP allowlist — composed as
+    `(session OR token) AND (allowlist ok)` in `src/server/auth/`.
+  - **Rate limiting + lockout** on login and `/api/*` (`express-rate-limit`).
+  - **First-run setup wizard** (`src/server/setupWizard.ts`): creates the admin
+    and writes `AppConfig`; secrets stay env-only (it reports Supabase/Discord
+    env status). `AppConfig.auth` added.
+  - **Control API** via a reusable `BotController` (`src/bot/controller.ts`):
+    pause/resume/restart/reconnect/safe-mode — plus `ConnectionManager.restart()`
+    /`reconnectNow()` and `BehaviorEngine.setManualPause()`.
+  - **Socket.IO** live bridge (`src/server/socket.ts`) with handshake auth,
+    emitting live state to authed clients.
+  - `/api/*` routes: auth, setup, dashboard state (incl. RAM)/logs/sessions,
+    config get/put/export/import (§8.5), control.
+  - New env: `SESSION_SECRET`.
+
 - **Phase 5 — Persistence layer.** Supabase (Postgres) as the durable source of
   truth, with an in-memory fallback so the app still boots with zero credentials:
   - Six repositories (`config`, `live_state`, `events`, `sessions`,

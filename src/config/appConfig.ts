@@ -20,9 +20,23 @@ export interface ConnectionConfig {
   username: string | null;
 }
 
+/**
+ * Dashboard auth configuration (masterdoc §8.2). Login/password is the always-on
+ * baseline (the admin account lives in the `admin_users` table); these two extra
+ * layers are independently toggleable. No secrets here — the session secret is
+ * env-only.
+ */
+export interface AuthConfig {
+  /** Optional shareable access-token URL. */
+  tokenUrl: { enabled: boolean; token: string | null };
+  /** Optional "super-security" IP allowlist (off by default). */
+  ipAllowlist: { enabled: boolean; entries: string[] };
+}
+
 export interface AppConfig {
   connection: ConnectionConfig;
   behavior: NeoBotConfig;
+  auth: AuthConfig;
 }
 
 /** Build the default config from the environment (first-run bootstrap value). */
@@ -35,5 +49,9 @@ export function buildDefaultAppConfig(env: Env): AppConfig {
       username: env.MC_USERNAME ?? null,
     },
     behavior: buildDefaultConfig(env),
+    auth: {
+      tokenUrl: { enabled: false, token: null },
+      ipAllowlist: { enabled: false, entries: [] },
+    },
   };
 }
