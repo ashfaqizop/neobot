@@ -83,7 +83,7 @@ NeoBot is built phase by phase (see [`masterdoc (2).md`](<masterdoc (2).md>) §1
 - [x] **Phase 1 — Scaffolding**: repo structure, toolchain, CI, Docker, OSS hygiene
 - [x] **Phase 2 — Core connection MVP**: connection manager, kick-reason parsing, reconnect/backoff, public `/status.json`
 - [x] **Phase 3 — Behavior engine core**: pluggable behaviors (walk/jumpLook/pathfindRandom/chat), human-like movement, always-on player-presence pause
-- [ ] Phase 4 — Extended behaviors + hazards
+- [x] **Phase 4 — Extended behaviors + hazards**: mine/swim/sneak/boat/doors/fish/eat/sleep/lookAt/itemDrop, block-interaction modes, lava/drowning/fall/mob self-preservation
 - [ ] Phase 5 — Supabase persistence
 - [ ] Phase 6 — Dashboard backend (auth, wizard, Socket.IO)
 - [ ] Phase 7 — Dashboard frontend

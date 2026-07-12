@@ -8,6 +8,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 4 — Extended behaviors + hazards.** Completes the v1 behavior set:
+  - Ten new behaviors: `sneak`, `swim`, `eat`, `fish`, `sleep`, `doors`, `boat`,
+    `lookAtEntity`, `itemDropPickup`, and `mineBlocks` — each self-gating via an
+    enriched `BotState` read-model.
+  - **Block-interaction modes** (`src/bot/blockInteraction.ts`, masterdoc §7):
+    `off` (default, leave-no-trace), `self-placed-only` (net-zero place→dig), and
+    `radius-any`, plus a `boundless` escape hatch; enforced by a pure
+    `src/bot/safeZone.ts` helper.
+  - **Hazard self-preservation** (`src/bot/hazards.ts`, masterdoc §6): lava,
+    drowning, hostile-mob, and fall-edge detection with a priority classifier and
+    protective responses, wired as a fast engine guardian that outranks
+    player-presence and all behaviors.
+  - Enriched `buildBotState` (oxygen/water/lava/day + inventory + nearby scans)
+    and new `hazard: <type>` activity surfaced in `/status.json`.
+  - New env: `BLOCK_INTERACTION_MODE`, `BLOCK_INTERACTION_BOUNDLESS`,
+    `HAZARD_AVOIDANCE_ENABLED`.
+
 - **Phase 3 — Behavior engine core.** Pluggable anti-AFK activity:
   - `AFKBehavior` plugin contract + registry (`src/bot/behaviors/`), so new
     behaviors register without touching core logic.

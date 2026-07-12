@@ -2,9 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { behaviorRegistry } from '../src/bot/behaviors/index.js';
 
 describe('behavior registry', () => {
-  it('contains the Phase 3 behaviors', () => {
+  it('contains all v1 behaviors (Phase 3 core + Phase 4 extended)', () => {
     const names = behaviorRegistry.map((b) => b.name);
-    expect(names).toEqual(expect.arrayContaining(['walk', 'jumpLook', 'pathfindRandom', 'chat']));
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'walk',
+        'jumpLook',
+        'pathfindRandom',
+        'chat',
+        'sneak',
+        'swim',
+        'eat',
+        'fish',
+        'sleep',
+        'doors',
+        'boat',
+        'lookAtEntity',
+        'itemDropPickup',
+        'mineBlocks',
+      ]),
+    );
+    expect(names).toHaveLength(14);
   });
 
   it('has unique behavior names', () => {

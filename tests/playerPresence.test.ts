@@ -8,7 +8,13 @@ function state(overrides: Partial<BotState> = {}): BotState {
     position: { x: 0, y: 64, z: 0 },
     health: 20,
     food: 20,
+    oxygen: 20,
     onGround: true,
+    isInWater: false,
+    isInLava: false,
+    isDay: true,
+    inventory: { hasFood: false, hasFishingRod: false, tossableItemCount: 0 },
+    nearby: { water: false, bed: false, door: false, boat: false, entity: false },
     players: [],
     ...overrides,
   };

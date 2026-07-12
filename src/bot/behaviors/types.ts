@@ -20,6 +20,24 @@ export interface PlayerInfo {
   position: Point | null;
 }
 
+/** Coarse inventory flags behaviors gate on (masterdoc §7). */
+export interface InventoryInfo {
+  hasFood: boolean;
+  hasFishingRod: boolean;
+  /** Number of items that could be tossed then re-collected (net-zero). */
+  tossableItemCount: number;
+}
+
+/** Cheap "is X within reach" flags computed once per cycle. */
+export interface NearbyInfo {
+  water: boolean;
+  bed: boolean;
+  door: boolean;
+  boat: boolean;
+  /** Any non-player entity (mob) nearby — for look-at behavior. */
+  entity: boolean;
+}
+
 /**
  * A read-only snapshot of the bot/world the engine builds each cycle and hands
  * to behaviors. Behaviors read this; they act through the live `bot`.
@@ -30,7 +48,14 @@ export interface BotState {
   position: Point | null;
   health: number;
   food: number;
+  /** Air remaining [0–20]; 20 when not submerged. */
+  oxygen: number;
   onGround: boolean;
+  isInWater: boolean;
+  isInLava: boolean;
+  isDay: boolean;
+  inventory: InventoryInfo;
+  nearby: NearbyInfo;
   /** All other players the bot can see (self already excluded). */
   players: PlayerInfo[];
 }
@@ -62,12 +87,28 @@ export interface SafeZoneConfig {
   radius: number;
 }
 
+/** Block-interaction ("mining") mode (masterdoc §7). */
+export type BlockInteractionMode = 'off' | 'self-placed-only' | 'radius-any';
+
+export interface BlockInteractionConfig {
+  mode: BlockInteractionMode;
+  /** Unrestricted roam/interaction for private/empty test servers. */
+  boundless: boolean;
+}
+
+/** Hazard self-preservation toggle (masterdoc §6). */
+export interface HazardsConfig {
+  enabled: boolean;
+}
+
 /** Resolved runtime configuration for the behavior engine. */
 export interface NeoBotConfig {
   behaviors: Record<string, BehaviorSetting>;
   chat: ChatConfig;
   playerPause: PlayerPauseConfig;
   safeZone: SafeZoneConfig;
+  blockInteraction: BlockInteractionConfig;
+  hazards: HazardsConfig;
   /** Humanized delay between behavior cycles. */
   cycle: { minMs: number; maxMs: number };
 }

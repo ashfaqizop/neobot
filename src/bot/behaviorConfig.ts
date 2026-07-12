@@ -29,10 +29,23 @@ function parseMessages(raw: string | undefined): string[] {
 export function buildDefaultConfig(env: Env): NeoBotConfig {
   return {
     behaviors: {
+      // Phase 3 core.
       walk: { enabled: true, weight: 3 },
       jumpLook: { enabled: true, weight: 2 },
       pathfindRandom: { enabled: true, weight: 2 },
       chat: { enabled: env.CHAT_ENABLED, weight: 1 },
+      // Phase 4 extended (situational — each self-gates via canRun).
+      sneak: { enabled: true, weight: 1 },
+      swim: { enabled: true, weight: 2 },
+      eat: { enabled: true, weight: 2 },
+      fish: { enabled: true, weight: 1 },
+      sleep: { enabled: true, weight: 1 },
+      doors: { enabled: true, weight: 1 },
+      boat: { enabled: true, weight: 1 },
+      lookAtEntity: { enabled: true, weight: 1 },
+      itemDropPickup: { enabled: true, weight: 1 },
+      // Gated by blockInteraction.mode — effectively off by default.
+      mineBlocks: { enabled: true, weight: 1 },
     },
     chat: {
       enabled: env.CHAT_ENABLED,
@@ -48,6 +61,13 @@ export function buildDefaultConfig(env: Env): NeoBotConfig {
       y: env.SAFE_ZONE_Y ?? null,
       z: env.SAFE_ZONE_Z ?? null,
       radius: env.SAFE_ZONE_RADIUS,
+    },
+    blockInteraction: {
+      mode: env.BLOCK_INTERACTION_MODE,
+      boundless: env.BLOCK_INTERACTION_BOUNDLESS,
+    },
+    hazards: {
+      enabled: env.HAZARD_AVOIDANCE_ENABLED,
     },
     cycle: { minMs: 3_000, maxMs: 9_000 },
   };

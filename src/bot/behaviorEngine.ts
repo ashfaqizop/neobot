@@ -16,9 +16,17 @@ import type { Bot } from 'mineflayer';
 import { childLogger } from '../lib/logger.js';
 import type { LiveStateStore } from './state.js';
 import { behaviorRegistry } from './behaviors/index.js';
-import type { AFKBehavior, BehaviorContext, BotState, NeoBotConfig } from './behaviors/types.js';
+import type {
+  AFKBehavior,
+  BehaviorContext,
+  BotState,
+  InventoryInfo,
+  NearbyInfo,
+  NeoBotConfig,
+} from './behaviors/types.js';
 import { randomInterval, weightedPick } from './behaviors/humanize.js';
 import { isPlayerNearby } from './playerPresence.js';
+import { buildHazardSnapshot, classifyHazard, respondToHazard, type HazardType } from './hazards.js';
 
 const log = childLogger('behavior');
 
@@ -26,6 +34,32 @@ const PAUSED_ACTIVITY = 'paused: player nearby';
 const IDLE_ACTIVITY = 'idle';
 /** How often the guardian re-checks for nearby players (ms). */
 const GUARDIAN_INTERVAL_MS = 500;
+/** Faster tick for hazard self-preservation (masterdoc §6) — safety-critical. */
+const HAZARD_INTERVAL_MS = 250;
+
+/** Loosely-typed view of the live bot for the per-cycle world scan. */
+interface ScanBot {
+  username?: string;
+  health?: number;
+  food?: number;
+  oxygenLevel?: number;
+  version?: string;
+  time?: { isDay?: boolean };
+  entity?: {
+    position?: { x: number; y: number; z: number; distanceTo(o: { x: number; y: number; z: number }): number };
+    onGround?: boolean;
+    isInWater?: boolean;
+    isInLava?: boolean;
+  };
+  players?: Record<string, { username?: string; entity?: { position?: { x: number; y: number; z: number } } }>;
+  registry?: { foodsByName?: Record<string, unknown> };
+  inventory?: { items(): { name: string; count: number }[] };
+  isABed?: (block: { name: string }) => boolean;
+  findBlock?: (opts: { matching: (b: { name: string }) => boolean; maxDistance: number }) => unknown;
+  nearestEntity?: (
+    match: (e: { name?: string; type?: string }) => boolean,
+  ) => { type?: string; position?: { distanceTo(o: unknown): number } } | null;
+}
 /**
  * Weight multiplier applied to the just-run behavior so it's less likely to
  * fire twice in a row. Modern anti-cheats (e.g. AntiAFK's Dynamic Time Warping)
@@ -52,9 +86,11 @@ export class BehaviorEngine {
   private bot: Bot | null = null;
   private running = false;
   private paused = false;
+  private hazard: HazardType | null = null;
   private lastBehaviorName: string | null = null;
   private cycleTimer: ReturnType<typeof setTimeout> | null = null;
   private guardianTimer: ReturnType<typeof setInterval> | null = null;
+  private hazardTimer: ReturnType<typeof setInterval> | null = null;
   private readonly pendingSleeps = new Set<PendingSleep>();
 
   constructor(
@@ -72,9 +108,13 @@ export class BehaviorEngine {
     this.bot = bot;
     this.running = true;
     this.paused = false;
+    this.hazard = null;
     log.info({ behaviors: this.behaviors.map((b) => b.name) }, 'Behavior engine started');
 
     this.guardianTimer = setInterval(() => this.checkPresence(), GUARDIAN_INTERVAL_MS);
+    if (this.config.hazards.enabled) {
+      this.hazardTimer = setInterval(() => this.checkHazardsOnce(), HAZARD_INTERVAL_MS);
+    }
     this.scheduleCycle();
   }
 
@@ -90,6 +130,11 @@ export class BehaviorEngine {
       clearInterval(this.guardianTimer);
       this.guardianTimer = null;
     }
+    if (this.hazardTimer) {
+      clearInterval(this.hazardTimer);
+      this.hazardTimer = null;
+    }
+    this.hazard = null;
     if (this.bot) {
       try {
         this.bot.clearControlStates();
@@ -123,9 +168,15 @@ export class BehaviorEngine {
   async runCycleOnce(): Promise<string | null> {
     if (!this.running || !this.bot) return null;
 
+    // Hazard self-preservation outranks everything (masterdoc §6).
+    if (this.hazard) {
+      this.state.setActivity(`hazard: ${this.hazard}`);
+      return null;
+    }
+
     const state = this.buildBotState(this.bot);
 
-    // Player-presence pause takes absolute priority (safety default).
+    // Player-presence pause takes priority over normal behaviors (safety default).
     if (this.updatePresence(state)) {
       this.state.setActivity(PAUSED_ACTIVITY);
       return null;
@@ -185,6 +236,35 @@ export class BehaviorEngine {
     return this.paused;
   }
 
+  /**
+   * Hazard guardian tick (masterdoc §6). Detects and responds to lava/drowning/
+   * hostile/fall danger with priority over all other activity. Exposed for tests.
+   * Returns the active hazard type (or null).
+   */
+  checkHazardsOnce(): HazardType | null {
+    if (!this.running || !this.bot || !this.config.hazards.enabled) return null;
+
+    const hazard = classifyHazard(buildHazardSnapshot(this.bot));
+    if (hazard) {
+      if (this.hazard !== hazard) {
+        this.hazard = hazard;
+        this.wakeAllSleeps();
+        this.state.setActivity(`hazard: ${hazard}`);
+        log.warn({ hazard }, 'Hazard detected — self-preservation engaged');
+      }
+      respondToHazard(this.bot, hazard);
+    } else if (this.hazard) {
+      this.hazard = null;
+      try {
+        this.bot.clearControlStates();
+      } catch {
+        // bot gone
+      }
+      log.info('Hazard cleared — resuming activity');
+    }
+    return this.hazard;
+  }
+
   /** Guardian tick: cheap re-check so we react between cycles too. */
   private checkPresence(): void {
     if (!this.running || !this.bot) return;
@@ -218,14 +298,14 @@ export class BehaviorEngine {
       config: this.config,
       rng: this.rng,
       sleep: (ms) => this.abortableSleep(ms),
-      shouldAbort: () => this.paused || !this.running,
+      shouldAbort: () => this.paused || this.hazard !== null || !this.running,
     };
   }
 
   /** Sleep that resolves early when the engine pauses/stops. */
   private abortableSleep(ms: number): Promise<void> {
     return new Promise<void>((resolve) => {
-      if (this.paused || !this.running) {
+      if (this.paused || this.hazard !== null || !this.running) {
         resolve();
         return;
       }
@@ -248,27 +328,78 @@ export class BehaviorEngine {
     this.pendingSleeps.clear();
   }
 
-  /** Build the read-model snapshot handed to behaviors. */
+  /** Build the read-model snapshot handed to behaviors. Defensive: any missing
+   * bot capability degrades to a safe default rather than throwing. */
   private buildBotState(bot: Bot): BotState {
-    const entity = bot.entity as { position?: { x: number; y: number; z: number }; onGround?: boolean } | undefined;
+    const b = bot as unknown as ScanBot;
+    const entity = b.entity;
     const pos = entity?.position ?? null;
-    const players = Object.values(bot.players ?? {})
+    const players = Object.values(b.players ?? {})
       .filter((p) => p?.username)
       .map((p) => {
         const ep = p.entity?.position;
         return {
-          username: p.username,
+          username: p.username as string,
           position: ep ? { x: ep.x, y: ep.y, z: ep.z } : null,
         };
       });
 
     return {
-      self: bot.username,
+      self: b.username ?? 'NeoBot',
       position: pos ? { x: pos.x, y: pos.y, z: pos.z } : null,
-      health: bot.health ?? 20,
-      food: bot.food ?? 20,
+      health: b.health ?? 20,
+      food: b.food ?? 20,
+      oxygen: b.oxygenLevel ?? 20,
       onGround: entity?.onGround ?? true,
+      isInWater: entity?.isInWater ?? false,
+      isInLava: entity?.isInLava ?? false,
+      isDay: b.time?.isDay ?? true,
+      inventory: this.readInventory(b),
+      nearby: this.readNearby(b),
       players,
+    };
+  }
+
+  private readInventory(b: ScanBot): InventoryInfo {
+    let items: { name: string; count: number }[] = [];
+    try {
+      items = b.inventory?.items() ?? [];
+    } catch {
+      items = [];
+    }
+    const foods = b.registry?.foodsByName;
+    return {
+      hasFood: foods ? items.some((it) => it.name in foods) : false,
+      hasFishingRod: items.some((it) => it.name.includes('fishing_rod')),
+      tossableItemCount: items.filter((it) => it.count > 1).length,
+    };
+  }
+
+  private readNearby(b: ScanBot): NearbyInfo {
+    const block = (matching: (bl: { name: string }) => boolean, maxDistance: number): boolean => {
+      try {
+        return b.findBlock?.({ matching, maxDistance }) != null;
+      } catch {
+        return false;
+      }
+    };
+    const entityNear = (match: (e: { name?: string; type?: string }) => boolean, radius: number): boolean => {
+      try {
+        const e = b.nearestEntity?.(match);
+        const self = b.entity?.position;
+        if (!e?.position || !self) return false;
+        return e.position.distanceTo(self) <= radius;
+      } catch {
+        return false;
+      }
+    };
+
+    return {
+      water: block((bl) => bl.name === 'water', 12),
+      bed: block((bl) => (b.isABed ? b.isABed(bl) : /_bed$/.test(bl.name)), 8),
+      door: block((bl) => /(_door|_fence_gate|_trapdoor)$/.test(bl.name), 6),
+      boat: entityNear((e) => (e.name ?? '').includes('boat'), 6),
+      entity: entityNear((e) => e.type === 'mob', 8),
     };
   }
 }

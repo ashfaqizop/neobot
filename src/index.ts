@@ -22,7 +22,7 @@ import { createApp, startServer } from './server/app.js';
 function main(): void {
   logger.info(
     { nodeEnv: env.NODE_ENV, port: env.PORT, version: process.env.npm_package_version ?? '0.1.0' },
-    'NeoBot starting (Phase 3 — behavior engine)',
+    'NeoBot starting (Phase 4 — extended behaviors + hazards)',
   );
 
   const state = new LiveStateStore();

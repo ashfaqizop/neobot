@@ -62,6 +62,12 @@ const envSchema = z.object({
   CHAT_ENABLED: booleanish.default('false'),
   /** Optional comma-separated chat message pool. */
   CHAT_MESSAGES: z.string().optional(),
+  /** Block-interaction mode — off by default (leave-no-trace, masterdoc §7). */
+  BLOCK_INTERACTION_MODE: z.enum(['off', 'self-placed-only', 'radius-any']).default('off'),
+  /** Unrestricted roam/interaction for private/empty test servers. */
+  BLOCK_INTERACTION_BOUNDLESS: booleanish.default('false'),
+  /** Hazard self-preservation (lava/drowning/fall/mobs) — on by default. */
+  HAZARD_AVOIDANCE_ENABLED: booleanish.default('true'),
 
   // --- Keep-alive (masterdoc §10). Self-ping default OFF. ---
   SELF_PING_ENABLED: booleanish.default('false'),

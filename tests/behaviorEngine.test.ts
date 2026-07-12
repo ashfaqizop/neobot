@@ -1,8 +1,36 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bot } from 'mineflayer';
+import vec3Pkg from 'vec3';
 import { BehaviorEngine } from '../src/bot/behaviorEngine.js';
 import { LiveStateStore } from '../src/bot/state.js';
 import type { AFKBehavior, BotState, NeoBotConfig } from '../src/bot/behaviors/types.js';
+
+const { Vec3 } = vec3Pkg;
+
+/** A bot rich enough for the hazard guardian's world scan. */
+function makeHazardBot(opts: { lava?: boolean } = {}): Record<string, unknown> {
+  return {
+    username: 'NeoBot',
+    entity: { position: new Vec3(0, 64, 0), yaw: 0, onGround: true, isInLava: opts.lava ?? false, isInWater: false },
+    oxygenLevel: 20,
+    health: 20,
+    food: 20,
+    players: {},
+    time: { isDay: true },
+    inventory: { items: () => [] },
+    registry: { foodsByName: {} },
+    blockAt: () => ({ name: 'stone' }),
+    nearestEntity: () => null,
+    findBlock: () => null,
+    isABed: () => false,
+    setControlState: vi.fn(),
+    clearControlStates: vi.fn(),
+    pathfinder: { stop: vi.fn() },
+    look: vi.fn(() => Promise.resolve()),
+    chat: vi.fn(),
+    moveVehicle: vi.fn(),
+  };
+}
 
 function makeConfig(overrides: Partial<NeoBotConfig> = {}): NeoBotConfig {
   return {
@@ -14,6 +42,8 @@ function makeConfig(overrides: Partial<NeoBotConfig> = {}): NeoBotConfig {
     chat: { enabled: false, messages: [], minIntervalMs: 1000, maxIntervalMs: 2000 },
     playerPause: { radius: 16 },
     safeZone: { x: null, y: null, z: null, radius: 32 },
+    blockInteraction: { mode: 'off', boundless: false },
+    hazards: { enabled: true },
     cycle: { minMs: 3000, maxMs: 9000 },
     ...overrides,
   };
@@ -78,7 +108,13 @@ describe('BehaviorEngine', () => {
     position: { x: 0, y: 64, z: 0 },
     health: 20,
     food: 20,
+    oxygen: 20,
     onGround: true,
+    isInWater: false,
+    isInLava: false,
+    isDay: true,
+    inventory: { hasFood: false, hasFishingRod: false, tossableItemCount: 0 },
+    nearby: { water: false, bed: false, door: false, boat: false, entity: false },
     players: [],
   };
 
@@ -148,6 +184,39 @@ describe('BehaviorEngine', () => {
     engine.start(asBot(makeBot()));
     expect(await engine.runCycleOnce()).toBe('alpha');
     expect(await engine.runCycleOnce()).toBe('beta');
+    engine.stop();
+  });
+
+  it('hazard self-preservation outranks behaviors (masterdoc §6)', async () => {
+    const engine = new BehaviorEngine(state, makeConfig(), {
+      behaviors: [fakeBehavior('alpha')],
+      rng: () => 0.1,
+    });
+    const bot = makeHazardBot({ lava: true });
+    engine.start(bot as unknown as Bot);
+
+    expect(engine.checkHazardsOnce()).toBe('lava');
+    expect(state.getSnapshot().currentActivity).toBe('hazard: lava');
+    expect(bot.clearControlStates).toHaveBeenCalled(); // responded
+
+    // Behaviors are skipped while the hazard is active.
+    expect(await engine.runCycleOnce()).toBeNull();
+    expect(ran).not.toContain('alpha');
+    engine.stop();
+  });
+
+  it('resumes normal behavior once the hazard clears', async () => {
+    const engine = new BehaviorEngine(state, makeConfig(), {
+      behaviors: [fakeBehavior('alpha')],
+      rng: () => 0.1,
+    });
+    const bot = makeHazardBot({ lava: true });
+    engine.start(bot as unknown as Bot);
+    expect(engine.checkHazardsOnce()).toBe('lava');
+
+    (bot.entity as { isInLava: boolean }).isInLava = false; // lava gone
+    expect(engine.checkHazardsOnce()).toBeNull();
+    expect(await engine.runCycleOnce()).toBe('alpha');
     engine.stop();
   });
 

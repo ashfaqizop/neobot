@@ -17,8 +17,11 @@ multi-server management inside a single instance.
 | Live-state store (in-memory) | `src/bot/state.ts` | 2 ✅ |
 | Health/status server | `src/server/app.ts`, `src/server/routes/status.ts` | 2 ✅ |
 | Behavior engine + scheduler | `src/bot/behaviorEngine.ts` | 3 ✅ |
-| Pluggable behaviors + humanize | `src/bot/behaviors/` | 3 ✅ |
+| Pluggable behaviors + humanize | `src/bot/behaviors/` | 3–4 ✅ |
 | Player-presence pause | `src/bot/playerPresence.ts` | 3 ✅ |
+| Extended behaviors (14 total) | `src/bot/behaviors/*.ts` | 4 ✅ |
+| Block-interaction modes + safe-zone | `src/bot/blockInteraction.ts`, `src/bot/safeZone.ts` | 4 ✅ |
+| Hazard self-preservation | `src/bot/hazards.ts` | 4 ✅ |
 | Behavior engine | `src/bot/behaviors/` | 3–4 |
 | Hazards / safe mode / hibernation | `src/bot/` | 4, 9 |
 | Persistence (Supabase) | `src/db/` | 5 |

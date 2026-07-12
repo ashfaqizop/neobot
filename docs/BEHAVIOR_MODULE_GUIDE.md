@@ -90,6 +90,30 @@ Add a default config entry in
 (`sneakPeek: { enabled: true, weight: 1 }`) and a unit test. Done — the engine
 picks it up automatically.
 
+## Block interaction & safe zone (masterdoc §7)
+
+The `mineBlocks` behavior is governed by `config.blockInteraction.mode`:
+
+| Mode | Behavior |
+|---|---|
+| `off` (default) | No block interaction at all. |
+| `self-placed-only` | Leave-no-trace: places a block then digs it back (net-zero). Only ever breaks blocks it placed. |
+| `radius-any` | May break natural blocks within the safe zone. |
+
+A separate `boundless` flag lifts the safe-zone restriction entirely (for
+private/empty test servers). Targets are validated with
+[`isWithinSafeZone`](../src/bot/safeZone.ts); "never dig" blocks (bedrock,
+liquids, spawners, …) live in `UNMINEABLE` in
+[`blockInteraction.ts`](../src/bot/blockInteraction.ts).
+
+## Hazards (masterdoc §6)
+
+Hazard self-preservation runs on a fast guardian that **outranks all behaviors
+and the player-presence pause**. [`classifyHazard`](../src/bot/hazards.ts)
+prioritizes `lava > drowning > hostile > fall`; while a hazard is active,
+`currentActivity` shows `hazard: <type>` and behaviors are suspended until it
+clears. Toggle with `HAZARD_AVOIDANCE_ENABLED` (on by default).
+
 ## Checklist
 
 - [ ] Implements `AFKBehavior` with a unique `name`.
