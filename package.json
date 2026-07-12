@@ -31,6 +31,7 @@
     "self-hostable"
   ],
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.2",
     "express": "^4.22.2",
     "mineflayer": "^4.37.1",
     "mineflayer-pathfinder": "^2.4.5",

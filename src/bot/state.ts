@@ -37,7 +37,7 @@ export class LiveStateStore extends EventEmitter {
   private lastDisconnectReason: string | null = null;
   private readonly sessions: SessionRecord[] = [];
   private readonly reconnectHistory: ReconnectHistoryEntry[] = [];
-  private readonly startedAtMs: number;
+  private startedAtMs: number;
   private lastUpdatedMs: number;
 
   /** Injectable clock for deterministic tests. */
@@ -69,23 +69,42 @@ export class LiveStateStore extends EventEmitter {
 
   /** Record the start of a new connected session. */
   recordSessionStart(): void {
-    this.sessions.push({
-      connectedAt: new Date(this.now()).toISOString(),
-      disconnectedAt: null,
-      disconnectReason: null,
-    });
+    const connectedAt = new Date(this.now()).toISOString();
+    this.sessions.push({ connectedAt, disconnectedAt: null, disconnectReason: null });
+    // Phase 5: the persistence bridge writes this to the `sessions` table.
+    this.emit('session:start', { connectedAt });
     this.touch();
   }
 
   /** Close the most recent open session with a disconnect reason. */
   recordSessionEnd(reason: string | null): void {
     this.lastDisconnectReason = reason;
+    const disconnectedAt = new Date(this.now()).toISOString();
     const open = [...this.sessions].reverse().find((s) => s.disconnectedAt === null);
     if (open) {
-      open.disconnectedAt = new Date(this.now()).toISOString();
+      open.disconnectedAt = disconnectedAt;
       open.disconnectReason = reason;
     }
+    this.emit('session:end', { disconnectedAt, reason });
     this.touch();
+  }
+
+  /**
+   * Restore state from a persisted snapshot (masterdoc §9) so status and uptime
+   * survive a mid-session container restart. Keeps `startedAt` for continuity.
+   */
+  hydrate(snapshot: StateSnapshot): void {
+    this.status = snapshot.status;
+    this.currentActivity = snapshot.currentActivity;
+    this.lastDisconnectReason = snapshot.lastDisconnectReason;
+    this.sessions.length = 0;
+    this.sessions.push(...snapshot.sessions);
+    this.reconnectHistory.length = 0;
+    this.reconnectHistory.push(...snapshot.reconnectHistory);
+    const started = Date.parse(snapshot.startedAt);
+    if (!Number.isNaN(started)) this.startedAtMs = started;
+    this.lastUpdatedMs = this.now();
+    this.emit('update', this.getStatusPayload());
   }
 
   /** Append a reconnect attempt to the bounded history ring. */

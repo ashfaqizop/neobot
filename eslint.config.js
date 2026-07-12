@@ -35,4 +35,17 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
+  {
+    // The Supabase client is untyped without a generated `Database` type, so row
+    // access is `any` at this boundary. We validate/shape rows explicitly with
+    // casts; relax the `any`-flow rules here rather than generating DB types.
+    files: ['src/db/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+    },
+  },
 );

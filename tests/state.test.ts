@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { LiveStateStore } from '../src/bot/state.js';
+import { LiveStateStore, type StateSnapshot } from '../src/bot/state.js';
 
 describe('LiveStateStore', () => {
   let clock: number;
@@ -60,5 +60,49 @@ describe('LiveStateStore', () => {
     store.recordSessionStart();
     store.recordSessionEnd('banned!');
     expect(store.getSnapshot().lastDisconnectReason).toBe('banned!');
+  });
+
+  it('emits session:start and session:end events (Phase 5 mirroring)', () => {
+    const starts: { connectedAt: string }[] = [];
+    const ends: { disconnectedAt: string; reason: string | null }[] = [];
+    store.on('session:start', (p: { connectedAt: string }) => starts.push(p));
+    store.on('session:end', (p: { disconnectedAt: string; reason: string | null }) => ends.push(p));
+
+    store.recordSessionStart();
+    clock = 1_030_000;
+    store.recordSessionEnd('socketClosed');
+
+    expect(starts).toHaveLength(1);
+    expect(ends).toHaveLength(1);
+    expect(ends[0]?.reason).toBe('socketClosed');
+  });
+
+  it('hydrate() restores status/activity/sessions and keeps uptime continuity', () => {
+    const snapshot: StateSnapshot = {
+      status: 'connected',
+      currentActivity: 'walk',
+      lastDisconnectReason: 'earlier',
+      uptimePercent: 0,
+      sessions: [
+        {
+          connectedAt: new Date(1_000_000).toISOString(),
+          disconnectedAt: new Date(1_060_000).toISOString(),
+          disconnectReason: 'earlier',
+        },
+      ],
+      reconnectHistory: [],
+      startedAt: new Date(1_000_000).toISOString(),
+      lastUpdated: new Date(1_060_000).toISOString(),
+    };
+
+    clock = 1_120_000; // 120s of observed time since the restored startedAt
+    store.hydrate(snapshot);
+
+    const snap = store.getSnapshot();
+    expect(snap.status).toBe('connected');
+    expect(snap.currentActivity).toBe('walk');
+    expect(snap.sessions).toHaveLength(1);
+    // 60s connected out of 120s observed → 50%.
+    expect(store.uptimePercent()).toBeCloseTo(50, 1);
   });
 });

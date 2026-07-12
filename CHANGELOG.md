@@ -8,6 +8,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 5 — Persistence layer.** Supabase (Postgres) as the durable source of
+  truth, with an in-memory fallback so the app still boots with zero credentials:
+  - Six repositories (`config`, `live_state`, `events`, `sessions`,
+    `admin_users`, `alert_settings`) behind interfaces, each with a Supabase and
+    an in-memory implementation, selected by `hasSupabase()` (`src/db/`).
+  - **Hybrid bootstrap-then-source-of-truth** config flow (`getOrBootstrap`): env
+    seeds the `config` table on first run, then Supabase governs.
+  - Live-state + session mirroring (`src/db/statePersistence.ts`) via the
+    `LiveStateStore` event stream (debounced `live_state` upserts + `sessions`
+    rows), and `LiveStateStore.hydrate()` to restore status/uptime after a
+    restart.
+  - Persisted `AppConfig` (`src/config/appConfig.ts`) bundling connection +
+    behavior config; secrets stay env-only.
+  - `src/db/schema.sql` (the six §9 tables) and a Supabase setup guide in
+    `docs/DEPLOYMENT.md`.
+
 - **Phase 4 — Extended behaviors + hazards.** Completes the v1 behavior set:
   - Ten new behaviors: `sneak`, `swim`, `eat`, `fish`, `sleep`, `doors`, `boat`,
     `lookAtEntity`, `itemDropPickup`, and `mineBlocks` — each self-gating via an
