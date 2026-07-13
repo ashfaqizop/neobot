@@ -21,6 +21,7 @@ import { createAuthRouter } from './routes/auth.js';
 import { createDashboardRouter } from './routes/dashboard.js';
 import { createConfigRouter } from './routes/config.js';
 import { createControlRouter } from './routes/control.js';
+import { createAlertsRouter } from './routes/alerts.js';
 import { needsSetup } from './setupWizard.js';
 import { asyncHandler } from './routes/asyncHandler.js';
 
@@ -55,6 +56,7 @@ export function createApp(deps: ApiDeps, opts: CreateAppOptions = {}): Express {
   app.use('/api', createDashboardRouter(deps));
   app.use('/api/config', createConfigRouter(deps));
   app.use('/api/control', createControlRouter(deps));
+  app.use('/api/alerts', createAlertsRouter(deps));
 
   // Serve the React dashboard SPA (Phase 7) when it's been built. The static
   // assets are hashed by Vite; every other (non-API) GET falls back to

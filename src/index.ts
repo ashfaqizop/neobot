@@ -26,21 +26,9 @@ import type { ConfigHolder } from './server/deps.js';
 import { createRepositories } from './db/repositories/index.js';
 import { attachStatePersistence } from './db/statePersistence.js';
 import type { AppConfig } from './config/appConfig.js';
-
-/** Alert event keys seeded into `alert_settings` (masterdoc §11). */
-const ALERT_KEYS = [
-  'connected',
-  'disconnected',
-  'reconnect_failed',
-  'kicked',
-  'banned',
-  'anticheat',
-  'whitelist',
-  'crash',
-  'low_memory',
-  'safe_mode',
-  'hibernating',
-];
+import { startDiscord } from './discord/index.js';
+import type { DiscordAlerter } from './discord/alerts.js';
+import { ALERT_KEYS } from './discord/presenters.js';
 
 /** Map persisted connection config to the manager's connect options (or null). */
 function connectOptions(conn: ConnectionConfig): BotConnectOptions | null {
@@ -56,7 +44,7 @@ function connectOptions(conn: ConnectionConfig): BotConnectOptions | null {
 async function main(): Promise<void> {
   logger.info(
     { nodeEnv: env.NODE_ENV, port: env.PORT, version: process.env.npm_package_version ?? '0.1.0' },
-    'NeoBot starting (Phase 6 — dashboard backend)',
+    'NeoBot starting (Phase 8 — Discord bot)',
   );
 
   // Persistence: Supabase when configured, else in-memory (zero-cred boot).
@@ -83,6 +71,10 @@ async function main(): Promise<void> {
   }
   attachStatePersistence(state, repos);
 
+  // Discord (Phase 8) is optional; the alerter is wired in after it starts, so
+  // this holder lets the connection's alert hook reach it once available.
+  let discordAlerter: DiscordAlerter | null = null;
+
   const engine = new BehaviorEngine(state, initialConfig.behavior);
   const connection = new ConnectionManager(state, {
     getConfig: () => connectOptions(currentConfig.connection),
@@ -93,6 +85,7 @@ async function main(): Promise<void> {
       void repos.events
         .append({ level: 'warn', category: 'connection', message: event.message, meta: event.meta })
         .catch((err: unknown) => logger.warn({ err }, 'events.append failed'));
+      void discordAlerter?.dispatch(event);
     },
   });
   const controller = new BotController(connection, engine, state);
@@ -100,6 +93,10 @@ async function main(): Promise<void> {
   const app = createApp({ state, repos, controller, config: configHolder });
   const server: Server = startServer(app, env.PORT);
   attachSocket(server, { state, getConfig: () => currentConfig });
+
+  // Optional Discord subsystem — slash commands + per-event alerts (§11).
+  const discord = await startDiscord({ controller, repos, getConfig: () => currentConfig });
+  discordAlerter = discord?.alerter ?? null;
 
   connection.start();
 
@@ -110,6 +107,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutting down NeoBot');
     engine.stop();
     connection.stop();
+    void discord?.stop().catch(() => undefined);
     // Best-effort final persist so the dashboard shows the last known state.
     void repos.liveState.save(state.getSnapshot()).catch(() => undefined);
     server.close(() => {

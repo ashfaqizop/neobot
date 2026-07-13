@@ -7,10 +7,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
 import type { AppConfig } from '../lib/types.ts';
+import type { AlertSetting } from '../lib/types.ts';
 import { Button, Panel, Skeleton, Badge } from '../components/ui/primitives.tsx';
 import { Field, Input, Select, Textarea, Toggle } from '../components/ui/form.tsx';
 import { useToast } from '../components/ui/Toast.tsx';
-import { humanizeError } from '../lib/humanize.ts';
+import { humanizeAlertKey, humanizeError } from '../lib/humanize.ts';
 import { IconDownload, IconUpload } from '../components/ui/icons.tsx';
 
 export function ConfigPage() {
@@ -320,7 +321,66 @@ export function ConfigPage() {
           )}
         </div>
       </Panel>
+
+      <AlertsPanel />
     </div>
+  );
+}
+
+/**
+ * Per-event alert toggles (§11) — shared with the Discord `/alerts` command via
+ * the `alert_settings` table. Self-contained: fetches + persists independently of
+ * the main config form.
+ */
+function AlertsPanel() {
+  const { push } = useToast();
+  const [alerts, setAlerts] = useState<AlertSetting[] | null>(null);
+
+  useEffect(() => {
+    api.alerts
+      .list()
+      .then((list) => setAlerts([...list].sort((a, b) => a.eventKey.localeCompare(b.eventKey))))
+      .catch(() => setAlerts([]));
+  }, []);
+
+  const toggle = async (eventKey: string, enabled: boolean) => {
+    setAlerts((prev) => prev?.map((a) => (a.eventKey === eventKey ? { ...a, enabled } : a)) ?? prev);
+    try {
+      await api.alerts.set(eventKey, enabled);
+    } catch (err) {
+      setAlerts((prev) =>
+        prev?.map((a) => (a.eventKey === eventKey ? { ...a, enabled: !enabled } : a)) ?? prev,
+      );
+      push(humanizeError(err instanceof Error ? err.message : 'Failed to update alert'), 'danger');
+    }
+  };
+
+  return (
+    <Panel
+      title="Discord alerts"
+      action={<span className="text-xs text-faint">per-event push toggles</span>}
+    >
+      {alerts === null ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-6" />
+          ))}
+        </div>
+      ) : alerts.length === 0 ? (
+        <p className="text-sm text-faint">No alert settings available.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {alerts.map((a) => (
+            <Toggle
+              key={a.eventKey}
+              checked={a.enabled}
+              onChange={(v) => void toggle(a.eventKey, v)}
+              label={humanizeAlertKey(a.eventKey)}
+            />
+          ))}
+        </div>
+      )}
+    </Panel>
   );
 }
 

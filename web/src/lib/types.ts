@@ -122,6 +122,12 @@ export interface SetupStatus {
   discordConfigured: boolean;
 }
 
+/** Per-event alert toggle (`alert_settings`, masterdoc §11). */
+export interface AlertSetting {
+  eventKey: string;
+  enabled: boolean;
+}
+
 export interface AuthUser {
   username: string;
 }

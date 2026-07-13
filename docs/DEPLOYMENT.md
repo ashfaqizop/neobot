@@ -55,6 +55,39 @@ Login and the API are rate-limited (lockout after repeated failed logins).
 Secrets (`SUPABASE_KEY`, `DISCORD_BOT_TOKEN`) are **never** collected or stored by
 the wizard — set them in the environment.
 
+## Discord bot (optional)
+
+The Discord subsystem (Phase 8) is **toggleable** — with no token/guild set it
+never starts, and the dashboard + core bot work fine without it.
+
+To enable it:
+
+1. Create an application at the
+   [Discord Developer Portal](https://discord.com/developers/applications) and
+   add a **Bot**. Copy the **bot token**.
+2. Invite the bot to your server with the **`bot`** and **`applications.commands`**
+   scopes (OAuth2 URL generator). No privileged intents are required — NeoBot
+   uses only the non-privileged `Guilds` intent.
+3. Set the environment:
+   - `DISCORD_BOT_TOKEN` — the bot token.
+   - `DISCORD_GUILD_ID` — your server (guild) ID.
+   - `DISCORD_ALERT_CHANNEL_ID` — *optional*; where alerts post. If unset, NeoBot
+     uses the guild's system channel, else the first channel it can post to.
+
+**Slash commands:** `/status`, `/pause`, `/resume`, `/restart`, `/reconnect`,
+`/safe-mode <on|off>`, `/logs [lines]`, `/config`, and
+`/alerts <view|mute|unmute>`. Commands register automatically (guild-scoped) on
+startup.
+
+**Alerts:** per-event push notifications (connected, disconnected, kicked,
+banned, reconnect-failed, …), toggled per event from the dashboard's **Discord
+alerts** panel or the `/alerts` command. Default is all-on.
+
+> **Known limitation (v1):** commands are open to **anyone in the guild** — there
+> is no role restriction yet. Keep the bot in a trusted/private server, or a
+> channel only trusted members can reach. Role-based restriction is a planned
+> enhancement, not required for v1.
+
 ## Render (planned)
 
 A one-click **Deploy to Render** button and a `render.yaml` Blueprint

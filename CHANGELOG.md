@@ -8,6 +8,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 8 — Discord bot.** An optional, toggleable `discord.js` bot for remote
+  control and alerts (masterdoc §11), gated by `hasDiscord()` — with no token it
+  never starts, and any Discord failure is swallowed so the keep-alive daemon
+  stays up:
+  - **Slash commands** (`src/discord/commands.ts`): `/status`, `/pause`,
+    `/resume`, `/restart`, `/reconnect`, `/safe-mode <on|off>`, `/logs [lines]`,
+    `/config`, and `/alerts <view|mute|unmute>` — routed to the shared
+    `BotController` / repositories. Guild-scoped, non-privileged `Guilds` intent.
+    Open to anyone in the guild in v1 (documented limitation).
+  - **Per-event push alerts** (`src/discord/alerts.ts`): a `DiscordAlerter` fans
+    connection/system events out to a channel, gated by the `alert_settings`
+    toggles (default all-on). Channel = `DISCORD_ALERT_CHANNEL_ID` or the guild's
+    system / first sendable channel. The connection manager now also emits a
+    `connected` alert.
+  - **Alert toggles on two surfaces:** a new `GET/PUT /api/alerts` and a
+    dashboard **Discord alerts** panel, mirroring the `/alerts` Discord command.
+  - New env: `DISCORD_ALERT_CHANNEL_ID` (optional).
+
 - **Phase 7 — Dashboard frontend.** The React dashboard SPA (`web/`), served by
   the same Express process (one port, one deployable):
   - **Stack:** Vite 7 + React 19 + TypeScript + Tailwind CSS v4 (CSS-first

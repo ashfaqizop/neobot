@@ -57,6 +57,25 @@ export function humanizeActivity(activity: string | null): string {
   return BEHAVIOR_LABELS[activity] ?? titleize(activity);
 }
 
+/** Friendly labels for the alert_settings event keys (mirrors §11 backend). */
+const ALERT_LABELS: Record<string, string> = {
+  connected: 'Connected',
+  disconnected: 'Disconnected',
+  reconnect_failed: 'Reconnect failed',
+  kicked: 'Kicked',
+  banned: 'Banned',
+  anticheat: 'Anti-cheat kick',
+  whitelist: 'Whitelist rejection',
+  crash: 'Crash / error',
+  low_memory: 'Low memory',
+  safe_mode: 'Safe Mode',
+  hibernating: 'Host hibernating',
+};
+
+export function humanizeAlertKey(key: string): string {
+  return ALERT_LABELS[key] ?? titleize(key);
+}
+
 /** Map known API error codes to sentences; pass through anything already prose. */
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_config: 'That configuration is invalid — please review the fields.',

@@ -213,6 +213,8 @@ export class ConnectionManager {
     this.state.recordSessionStart();
     this.state.setStatus('connected', 'idle');
     log.info('Connected to Minecraft server');
+    // Alert source for the 'connected' event (Discord push, masterdoc §11).
+    this.onAlert({ key: 'connected', message: 'Connected to the Minecraft server.' });
     if (this.bot) this.onBotReady(this.bot);
   }
 

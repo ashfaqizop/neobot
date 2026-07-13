@@ -29,6 +29,9 @@ multi-server management inside a single instance.
 | Control seam (pause/restart/…) | `src/bot/controller.ts` | 6 ✅ |
 | Socket.IO live bridge | `src/server/socket.ts` | 6 ✅ |
 | Dashboard UI (React SPA) | `web/` | 7 ✅ |
+| Discord bot (commands + alerts) | `src/discord/` | 8 ✅ |
+| Alert-settings API | `src/server/routes/alerts.ts` | 8 ✅ |
+| Dashboard UI (React SPA) | `web/` | 7 ✅ |
 | Discord bot | `src/discord/` | 8 |
 | Memory watchdog | `src/watchdog/` | 9 |
 

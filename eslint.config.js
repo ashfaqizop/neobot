@@ -33,6 +33,8 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-return': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
+      // Spy assertions reference repository methods without calling them.
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
   {

@@ -44,6 +44,8 @@ const envSchema = z.object({
   // --- Discord (masterdoc §11). Optional -> subsystem disabled. ---
   DISCORD_BOT_TOKEN: z.string().min(1).optional(),
   DISCORD_GUILD_ID: z.string().min(1).optional(),
+  /** Channel for alert posts. Unset -> system channel / first sendable channel. */
+  DISCORD_ALERT_CHANNEL_ID: z.string().min(1).optional(),
 
   // --- Dashboard admin (masterdoc §8.2). Optional -> setup wizard. ---
   ADMIN_USERNAME: z.string().min(1).optional(),

@@ -6,6 +6,7 @@
  * (including background polls).
  */
 import type {
+  AlertSetting,
   AppConfig,
   AuthUser,
   ControllerSnapshot,
@@ -117,6 +118,13 @@ export const api = {
     request<{ ok: true }>('/api/config', { method: 'PUT', body: config }),
   importConfig: (config: AppConfig) =>
     request<{ ok: true }>('/api/config/import', { method: 'POST', body: config }),
+
+  // Alerts (per-event toggles, §11)
+  alerts: {
+    list: () => request<AlertSetting[]>('/api/alerts'),
+    set: (eventKey: string, enabled: boolean) =>
+      request<{ ok: true }>('/api/alerts', { method: 'PUT', body: { eventKey, enabled } }),
+  },
 
   // Control
   control: {
