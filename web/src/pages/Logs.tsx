@@ -3,11 +3,12 @@
  * localized to the viewer's timezone. Auto-refreshes on an interval.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.ts';
 import type { EventLevel, EventRecord, SessionRow } from '../lib/types.ts';
 import type { StatusTone } from '../lib/format.ts';
 import { formatDuration, formatRelative, formatTime } from '../lib/format.ts';
-import { Badge, Button, Panel, Spinner } from '../components/ui/primitives.tsx';
+import { Badge, Button, Panel, Skeleton } from '../components/ui/primitives.tsx';
 
 const REFRESH_MS = 5000;
 const LEVEL_TONE: Record<EventLevel, StatusTone> = { info: 'idle', warn: 'warn', error: 'danger' };
@@ -15,7 +16,10 @@ const LEVEL_TONE: Record<EventLevel, StatusTone> = { info: 'idle', warn: 'warn',
 export function Logs() {
   const [events, setEvents] = useState<EventRecord[] | null>(null);
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
-  const [tab, setTab] = useState<'events' | 'sessions'>('events');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: 'events' | 'sessions' = searchParams.get('tab') === 'sessions' ? 'sessions' : 'events';
+  const setTab = (next: 'events' | 'sessions') =>
+    setSearchParams(next === 'events' ? {} : { tab: next }, { replace: true });
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -153,9 +157,15 @@ function TabButton({
 
 function Loading() {
   return (
-    <div className="flex items-center justify-center py-12 text-accent">
-      <Spinner size={20} />
-    </div>
+    <ul className="divide-y divide-border/60">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <li key={i} className="flex items-center gap-3 px-4 py-3">
+          <Skeleton className="h-5 w-14" />
+          <Skeleton className="h-4 flex-1" />
+          <Skeleton className="h-4 w-16" />
+        </li>
+      ))}
+    </ul>
   );
 }
 

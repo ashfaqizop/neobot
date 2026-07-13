@@ -7,9 +7,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
 import type { AppConfig } from '../lib/types.ts';
-import { Button, Panel, Spinner, Badge } from '../components/ui/primitives.tsx';
+import { Button, Panel, Skeleton, Badge } from '../components/ui/primitives.tsx';
 import { Field, Input, Select, Textarea, Toggle } from '../components/ui/form.tsx';
 import { useToast } from '../components/ui/Toast.tsx';
+import { humanizeError } from '../lib/humanize.ts';
 import { IconDownload, IconUpload } from '../components/ui/icons.tsx';
 
 export function ConfigPage() {
@@ -32,8 +33,13 @@ export function ConfigPage() {
         <p className="text-sm text-danger">{error}</p>
       </Panel>
     ) : (
-      <div className="flex items-center justify-center py-20 text-accent">
-        <Spinner size={22} />
+      <div className="flex flex-col gap-5">
+        <Skeleton className="h-10 w-56" />
+        <Skeleton className="h-40" />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <Skeleton className="h-72" />
+          <Skeleton className="h-72" />
+        </div>
       </div>
     );
   }
@@ -53,7 +59,7 @@ export function ConfigPage() {
       await api.putConfig(config);
       push('Configuration saved', 'ok');
     } catch (err) {
-      push(err instanceof Error ? err.message : 'Save failed', 'danger');
+      push(humanizeError(err instanceof Error ? err.message : 'Save failed'), 'danger');
     } finally {
       setSaving(false);
     }
@@ -76,7 +82,7 @@ export function ConfigPage() {
       setConfig(parsed);
       push('Configuration imported', 'ok');
     } catch (err) {
-      push(err instanceof Error ? err.message : 'Import failed — invalid file', 'danger');
+      push(humanizeError(err instanceof Error ? err.message : 'Import failed — invalid file'), 'danger');
     }
   };
 

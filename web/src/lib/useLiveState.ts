@@ -19,6 +19,8 @@ export interface LiveState {
   snapshot: ControllerSnapshot | null;
   connected: boolean;
   error: string | null;
+  /** App version, streamed from the Socket.IO status payload. */
+  version: string | null;
   /** True until the first snapshot resolves. */
   loading: boolean;
 }
@@ -27,6 +29,7 @@ export function useLiveState(): LiveState {
   const [snapshot, setSnapshot] = useState<ControllerSnapshot | null>(null);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
 
@@ -65,6 +68,7 @@ export function useLiveState(): LiveState {
     };
     const onState = (payload: StatusPayload): void => {
       if (!mounted.current) return;
+      setVersion(payload.version);
       // Patch the fast-moving fields immediately; the next poll reconciles rest.
       setSnapshot((prev) =>
         prev
@@ -93,5 +97,5 @@ export function useLiveState(): LiveState {
     };
   }, []);
 
-  return { snapshot, connected, error, loading };
+  return { snapshot, connected, error, version, loading };
 }

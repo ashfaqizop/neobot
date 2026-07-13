@@ -161,6 +161,18 @@ export function Stat({
   );
 }
 
+// ---- Skeleton -------------------------------------------------------------
+
+/** Shimmer placeholder that preserves layout during first paint. */
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn('animate-pulse rounded-[var(--radius-md)] bg-surface-2', className)}
+      aria-hidden="true"
+    />
+  );
+}
+
 // ---- Spinner --------------------------------------------------------------
 
 export function Spinner({ size = 18 }: { size?: number }) {

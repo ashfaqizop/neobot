@@ -9,7 +9,8 @@ import { useLive } from '../components/AppShell.tsx';
 import { api } from '../lib/api.ts';
 import type { AppConfig } from '../lib/types.ts';
 import { formatBytes, formatDuration, formatRelative, formatTime, statusMeta } from '../lib/format.ts';
-import { Badge, Button, Panel, Spinner, Stat, StatusDot } from '../components/ui/primitives.tsx';
+import { humanizeActivity, humanizeCategory, humanizeError } from '../lib/humanize.ts';
+import { Badge, Button, Panel, Skeleton, Stat, StatusDot } from '../components/ui/primitives.tsx';
 import { Toggle } from '../components/ui/form.tsx';
 import { Minimap } from '../components/Minimap.tsx';
 import { useToast } from '../components/ui/Toast.tsx';
@@ -23,10 +24,11 @@ import {
 } from '../components/ui/icons.tsx';
 
 export function Dashboard() {
-  const { snapshot, loading, error } = useLive();
+  const { snapshot, loading, error, version } = useLive();
   const { push } = useToast();
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [confirmRestart, setConfirmRestart] = useState(false);
 
   useEffect(() => {
     api
@@ -41,18 +43,14 @@ export function Dashboard() {
       await fn();
       push(message, 'accent');
     } catch (err) {
-      push(err instanceof Error ? err.message : 'Action failed', 'danger');
+      push(humanizeError(err instanceof Error ? err.message : 'Action failed'), 'danger');
     } finally {
       setPending(null);
     }
   };
 
   if (loading && !snapshot) {
-    return (
-      <div className="flex items-center justify-center py-20 text-accent">
-        <Spinner size={22} />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!snapshot) {
@@ -77,13 +75,7 @@ export function Dashboard() {
           <div>
             <h1 className="text-xl font-semibold text-ink">{meta.label}</h1>
             <p className="text-sm text-muted">
-              {snapshot.currentActivity ? (
-                <>
-                  Currently: <span className="text-ink">{snapshot.currentActivity}</span>
-                </>
-              ) : (
-                'Idle'
-              )}
+              Currently: <span className="text-ink">{humanizeActivity(snapshot.currentActivity)}</span>
             </p>
           </div>
         </div>
@@ -155,13 +147,24 @@ export function Dashboard() {
               >
                 <IconReconnect size={16} /> Reconnect
               </Button>
-              <Button
-                variant="danger"
-                loading={pending === 'restart'}
-                onClick={() => void run('restart', () => api.control.restart(), 'Connection restarting')}
-              >
-                <IconRestart size={16} /> Restart
-              </Button>
+              {confirmRestart ? (
+                <Button
+                  variant="danger"
+                  loading={pending === 'restart'}
+                  onClick={() => {
+                    setConfirmRestart(false);
+                    void run('restart', () => api.control.restart(), 'Connection restarting');
+                  }}
+                  onBlur={() => setConfirmRestart(false)}
+                  autoFocus
+                >
+                  <IconRestart size={16} /> Confirm restart?
+                </Button>
+              ) : (
+                <Button variant="danger" onClick={() => setConfirmRestart(true)}>
+                  <IconRestart size={16} /> Restart
+                </Button>
+              )}
             </div>
             <div className="mt-4 border-t border-border/70 pt-4">
               <Toggle
@@ -196,8 +199,10 @@ export function Dashboard() {
                       className="flex items-center justify-between gap-3 text-sm"
                     >
                       <span className="flex min-w-0 items-center gap-2">
-                        <Badge tone="idle">{h.category}</Badge>
-                        <span className="truncate text-muted">{h.reason}</span>
+                        <Badge tone="idle">{humanizeCategory(h.category)}</Badge>
+                        <span className="truncate text-muted" title={h.reason}>
+                          {h.reason}
+                        </span>
                       </span>
                       <span
                         className="shrink-0 font-mono text-xs text-faint tabular-nums"
@@ -232,7 +237,7 @@ export function Dashboard() {
             <dl className="flex flex-col gap-2 text-sm">
               <Row label="Since" value={formatDuration(snapshot.startedAt)} />
               <Row label="Last update" value={formatRelative(snapshot.lastUpdated)} />
-              <Row label="Version" value={<span className="font-mono">{'v0.1.0'}</span>} />
+              <Row label="Version" value={<span className="font-mono">{version ? `v${version}` : '—'}</span>} />
             </dl>
           </Panel>
         </div>
@@ -246,6 +251,29 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-center justify-between gap-3">
       <dt className="text-faint">{label}</dt>
       <dd className="font-mono text-ink tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-5">
+      <Skeleton className="h-10 w-64" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
+        <div className="flex flex-col gap-5">
+          <Skeleton className="h-40" />
+          <Skeleton className="h-56" />
+        </div>
+        <div className="flex flex-col gap-5">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-32" />
+        </div>
+      </div>
     </div>
   );
 }

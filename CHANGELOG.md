@@ -27,6 +27,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - **Live data:** `LiveStateStore.setWorld()` now surfaces the bot's live
     position + visible player count into the authed `GET /api/state` snapshot
     (kept out of the public `/status.json`) to drive the minimap and widgets.
+  - **Design QA (impeccable critique, 32/40 → refined):** humanized leaked
+    backend identifiers (`server_restart` → "Server restart", `jumpLook` →
+    "Jump & look", error codes → sentences); keyboard shortcuts (`g d`/`g l`/
+    `g c` nav, `p` pause/resume, `r` reconnect, `?` help sheet); a two-step
+    confirm on Restart; loading skeletons instead of spinners; an AA-contrast
+    bump on the muted status tone; and the real app version in place of a
+    hard-coded string.
 
 - **Phase 6 — Dashboard backend.** The full server-side API for the dashboard
   (the React UI arrives in Phase 7):

@@ -4,14 +4,16 @@
  * the main region. Owns the single {@link useLiveState} poll and hands it to
  * pages through the router Outlet context so there's exactly one data feed.
  */
-import { useState } from 'react';
-import { NavLink, Outlet, useOutletContext } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
 import { cn } from '../lib/cn.ts';
 import { useAuth } from '../lib/auth.tsx';
+import { api } from '../lib/api.ts';
 import { useLiveState, type LiveState } from '../lib/useLiveState.ts';
 import { statusMeta } from '../lib/format.ts';
 import { Brand } from './Brand.tsx';
 import { Button, StatusDot } from './ui/primitives.tsx';
+import { useToast } from './ui/Toast.tsx';
 import {
   IconConfig,
   IconDashboard,
@@ -30,7 +32,58 @@ const NAV = [
 export function AppShell() {
   const live = useLiveState();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { push } = useToast();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  // Keyboard accelerators (critique P2 — power-user efficiency). `g` then d/l/c
+  // navigates; p toggles pause/resume; r reconnects; ? shows the shortcut sheet.
+  const paused = live.snapshot?.paused ?? false;
+  const gPending = useRef(false);
+  useEffect(() => {
+    const control = (fn: () => Promise<unknown>, msg: string) =>
+      void fn()
+        .then(() => push(msg, 'accent'))
+        .catch(() => push('Action failed', 'danger'));
+
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+
+      if (gPending.current) {
+        gPending.current = false;
+        const dest = e.key === 'd' ? '/' : e.key === 'l' ? '/logs' : e.key === 'c' ? '/config' : null;
+        if (dest) {
+          void navigate(dest);
+          return;
+        }
+      }
+      switch (e.key) {
+        case 'g':
+          gPending.current = true;
+          setTimeout(() => (gPending.current = false), 800);
+          return;
+        case '?':
+          setHelpOpen((v) => !v);
+          return;
+        case 'Escape':
+          setHelpOpen(false);
+          setDrawerOpen(false);
+          return;
+        case 'p':
+          return control(
+            () => (paused ? api.control.resume() : api.control.pause()),
+            paused ? 'Behaviors resumed' : 'Behaviors paused',
+          );
+        case 'r':
+          return control(() => api.control.reconnect(), 'Reconnecting now');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [paused, navigate, push]);
 
   const nav = (
     <nav className="flex flex-col gap-1">
@@ -121,12 +174,72 @@ export function AppShell() {
               <Brand size={24} />
             </span>
           </div>
-          <ConnectionPill live={live} />
+          <div className="flex items-center gap-2">
+            <ConnectionPill live={live} />
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts (?)"
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-border text-sm font-medium text-muted hover:text-ink sm:flex"
+            >
+              ?
+            </button>
+          </div>
         </header>
 
         <main className="mx-auto max-w-6xl px-4 py-6">
           <Outlet context={live} />
         </main>
+      </div>
+
+      {helpOpen && <ShortcutSheet onClose={() => setHelpOpen(false)} />}
+    </div>
+  );
+}
+
+const SHORTCUTS: Array<[string, string]> = [
+  ['g d', 'Go to Dashboard'],
+  ['g l', 'Go to Logs'],
+  ['g c', 'Go to Config'],
+  ['p', 'Pause / resume behaviors'],
+  ['r', 'Reconnect now'],
+  ['?', 'Toggle this help'],
+];
+
+function ShortcutSheet({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Keyboard shortcuts"
+    >
+      <button aria-label="Close" className="absolute inset-0 bg-base/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="animate-fade-in relative w-full max-w-sm rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink">Keyboard shortcuts</h2>
+          <button aria-label="Close" onClick={onClose} className="text-faint hover:text-ink">
+            <IconClose size={16} />
+          </button>
+        </div>
+        <dl className="flex flex-col gap-2.5">
+          {SHORTCUTS.map(([keys, label]) => (
+            <div key={keys} className="flex items-center justify-between gap-4">
+              <dt className="text-sm text-muted">{label}</dt>
+              <dd className="flex gap-1">
+                {keys.split(' ').map((k) => (
+                  <kbd
+                    key={k}
+                    className="min-w-[22px] rounded border border-border-strong bg-surface-2 px-1.5 py-0.5 text-center font-mono text-xs text-ink"
+                  >
+                    {k}
+                  </kbd>
+                ))}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
   );
