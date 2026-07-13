@@ -16,6 +16,7 @@ import type {
   SessionRecord,
   StatusPayload,
 } from './types.js';
+import type { Point } from './behaviors/types.js';
 
 const APP_VERSION = process.env.npm_package_version ?? '0.1.0';
 const MAX_HISTORY = 50;
@@ -27,6 +28,10 @@ export interface StateSnapshot {
   uptimePercent: number;
   sessions: SessionRecord[];
   reconnectHistory: ReconnectHistoryEntry[];
+  /** Bot's current world position (X/Z drive the dashboard minimap, §8.4). */
+  position: Point | null;
+  /** Other players visible on the target server (§8.4 "last-seen player count"). */
+  playerCount: number;
   startedAt: string;
   lastUpdated: string;
 }
@@ -37,6 +42,8 @@ export class LiveStateStore extends EventEmitter {
   private lastDisconnectReason: string | null = null;
   private readonly sessions: SessionRecord[] = [];
   private readonly reconnectHistory: ReconnectHistoryEntry[] = [];
+  private position: Point | null = null;
+  private playerCount = 0;
   private startedAtMs: number;
   private lastUpdatedMs: number;
 
@@ -101,10 +108,24 @@ export class LiveStateStore extends EventEmitter {
     this.sessions.push(...snapshot.sessions);
     this.reconnectHistory.length = 0;
     this.reconnectHistory.push(...snapshot.reconnectHistory);
+    this.position = snapshot.position ? { ...snapshot.position } : null;
+    this.playerCount = snapshot.playerCount;
     const started = Date.parse(snapshot.startedAt);
     if (!Number.isNaN(started)) this.startedAtMs = started;
     this.lastUpdatedMs = this.now();
     this.emit('update', this.getStatusPayload());
+  }
+
+  /**
+   * Record the bot's live world position + visible player count (§8.4). Sampled
+   * frequently by the behavior engine, so this is deliberately silent — no
+   * `touch()`/emit — to avoid flooding the socket and persistence layer. The
+   * dashboard reads these by polling the authed snapshot (`GET /api/state`); they
+   * are intentionally absent from the public `/status.json` (no position leak).
+   */
+  setWorld(world: { position: Point | null; playerCount: number }): void {
+    this.position = world.position;
+    this.playerCount = world.playerCount;
   }
 
   /** Append a reconnect attempt to the bounded history ring. */
@@ -154,6 +175,8 @@ export class LiveStateStore extends EventEmitter {
       uptimePercent: this.uptimePercent(),
       sessions: this.sessions.map((s) => ({ ...s })),
       reconnectHistory: this.reconnectHistory.map((h) => ({ ...h })),
+      position: this.position ? { ...this.position } : null,
+      playerCount: this.playerCount,
       startedAt: new Date(this.startedAtMs).toISOString(),
       lastUpdated: new Date(this.lastUpdatedMs).toISOString(),
     };

@@ -8,6 +8,8 @@
  */
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
 import { createServer, type Server } from 'node:http';
+import { existsSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import helmet from 'helmet';
 import { childLogger } from '../lib/logger.js';
 import type { ApiDeps } from './deps.js';
@@ -24,7 +26,12 @@ import { asyncHandler } from './routes/asyncHandler.js';
 
 const log = childLogger('server');
 
-export function createApp(deps: ApiDeps): Express {
+export interface CreateAppOptions {
+  /** Directory of the built SPA. Defaults to `web/dist`; injectable for tests. */
+  spaDir?: string;
+}
+
+export function createApp(deps: ApiDeps, opts: CreateAppOptions = {}): Express {
   const app = express();
 
   // Trust the platform proxy (Render/etc.) so client IPs are correct — needed
@@ -49,17 +56,37 @@ export function createApp(deps: ApiDeps): Express {
   app.use('/api/config', createConfigRouter(deps));
   app.use('/api/control', createControlRouter(deps));
 
-  // Root: a tiny setup-status placeholder until the SPA lands in Phase 7.
-  app.get(
-    '/',
-    asyncHandler(async (_req, res) => {
-      res.json({
-        name: 'NeoBot',
-        dashboard: 'API only until Phase 7',
-        needsSetup: await needsSetup(deps.repos),
+  // Serve the React dashboard SPA (Phase 7) when it's been built. The static
+  // assets are hashed by Vite; every other (non-API) GET falls back to
+  // index.html so client-side routing works on deep links / refresh. Guarded by
+  // an existence check so API-only runs and tests behave as before.
+  const spaDir = opts.spaDir ?? resolve(process.cwd(), 'web', 'dist');
+  if (existsSync(join(spaDir, 'index.html'))) {
+    app.use(express.static(spaDir, { index: false, maxAge: '1h' }));
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      // Never hijack the API surface or the Socket.IO transport; let unknown
+      // /api/* fall through to the 404/error handling instead of serving HTML.
+      if (req.method !== 'GET' || req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+        next();
+        return;
+      }
+      res.sendFile(join(spaDir, 'index.html'), (err) => {
+        if (err) next(err);
       });
-    }),
-  );
+    });
+  } else {
+    // No SPA build present: keep the tiny setup-status placeholder at the root.
+    app.get(
+      '/',
+      asyncHandler(async (_req, res) => {
+        res.json({
+          name: 'NeoBot',
+          dashboard: 'run `npm run build` to bundle the dashboard UI',
+          needsSetup: await needsSetup(deps.repos),
+        });
+      }),
+    );
+  }
 
   // JSON error handler (async route rejections land here).
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

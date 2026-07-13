@@ -20,6 +20,20 @@ describe('LiveStateStore', () => {
     expect(() => new Date(p.lastUpdated).toISOString()).not.toThrow();
   });
 
+  it('setWorld records position + player count in the snapshot without emitting', () => {
+    let updates = 0;
+    store.on('update', () => (updates += 1));
+    store.setWorld({ position: { x: 12.4, y: 64, z: -8.1 }, playerCount: 3 });
+
+    const snap = store.getSnapshot();
+    expect(snap.position).toEqual({ x: 12.4, y: 64, z: -8.1 });
+    expect(snap.playerCount).toBe(3);
+    // Silent by design (sampled ~500ms) — must not flood the socket/persistence.
+    expect(updates).toBe(0);
+    // ...and it stays out of the public /status.json payload (no position leak).
+    expect(store.getStatusPayload()).not.toHaveProperty('position');
+  });
+
   it('emits an update event when status changes', () => {
     let received: unknown = null;
     store.on('update', (payload) => (received = payload));
@@ -91,6 +105,8 @@ describe('LiveStateStore', () => {
         },
       ],
       reconnectHistory: [],
+      position: null,
+      playerCount: 0,
       startedAt: new Date(1_000_000).toISOString(),
       lastUpdated: new Date(1_060_000).toISOString(),
     };

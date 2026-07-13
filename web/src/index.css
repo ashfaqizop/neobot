@@ -1,0 +1,150 @@
+@import 'tailwindcss';
+
+/*
+ * NeoBot dashboard design system (masterdoc §8.1, §19).
+ * Dark-only, OLED-friendly, data-dense. Identity is committed by §19 — near-black
+ * base + electric-cyan accent — so tokens preserve it rather than inventing a
+ * palette. Cyan is used as a restrained signal (focus, active, live), never
+ * drenched. Status hues map to BotStatus and always pair with a label/icon.
+ */
+@theme {
+  /* Surfaces — near-black base layered up toward cool panels. */
+  --color-base: #0a0e14;
+  --color-surface: #111722;
+  --color-surface-2: #161d2b;
+  --color-overlay: #1b2436;
+  --color-border: #24304a;
+  --color-border-strong: #33436b;
+
+  /* Text — verified ≥4.5:1 on base + surfaces. */
+  --color-ink: #e6edf3;
+  --color-muted: #9fb0c3;
+  --color-faint: #8296ad;
+
+  /* Brand accent — electric cyan. */
+  --color-accent: #4fd8ff;
+  --color-accent-strong: #7ce4ff;
+  --color-accent-dim: #2b8fb0;
+  --color-on-accent: #04121a;
+
+  /* Semantic status. */
+  --color-ok: #34d399;
+  --color-warn: #fbbf24;
+  --color-idle: #64748b;
+  --color-danger: #f87171;
+
+  /* Typography — technical sans + mono for data readouts. */
+  --font-sans: 'Fira Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Radius scale. */
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv05', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Tabular figures everywhere numbers are read as data. */
+  .tnum,
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  /* Consistent, visible focus — cyan ring, never removed. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+    color: var(--color-ink);
+  }
+
+  /* Themed scrollbars so panels don't break the dark surface. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+}
+
+@layer utilities {
+  /* Restrained cyan glow for live/active signals (not glassmorphism). */
+  .glow-accent {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, transparent),
+      0 0 18px -4px color-mix(in srgb, var(--color-accent) 55%, transparent);
+  }
+  .text-glow {
+    text-shadow: 0 0 12px color-mix(in srgb, currentColor 55%, transparent);
+  }
+
+  /* Subtle grid texture for the app backdrop / minimap frame. */
+  .bg-grid {
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--color-border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-border) 55%, transparent) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+@keyframes neo-ping {
+  75%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes neo-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-fade-in {
+  animation: neo-fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

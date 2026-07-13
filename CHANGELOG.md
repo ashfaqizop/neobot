@@ -8,6 +8,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 7 — Dashboard frontend.** The React dashboard SPA (`web/`), served by
+  the same Express process (one port, one deployable):
+  - **Stack:** Vite 7 + React 19 + TypeScript + Tailwind CSS v4 (CSS-first
+    `@theme` tokens), `react-router` v7, and the Socket.IO client. Added as an
+    npm workspace; fonts self-hosted via `@fontsource` (no CDN → CSP-clean).
+  - **Ultra-polished black + electric-cyan theme** (masterdoc §8.1/§19),
+    dark-only, data-dense, mobile-responsive, with a consistent design-token
+    system and `prefers-reduced-motion` fallbacks throughout.
+  - **Pages:** Login (with lockout messaging + token-URL deep links), the
+    first-run **Setup Wizard**, a live **Dashboard** (status/uptime/activity/RAM/
+    player-count/reconnect history, pause·resume·restart·reconnect·Safe-Mode
+    controls, and a 2D **minimap** plotting X/Z with a movement trail), **Logs**
+    (event tail + session history, timezone-localized), and **Config** (edit +
+    JSON export/import).
+  - Served by Express: `web/dist` static assets + SPA fallback, mounted after
+    `/api`, `/status.json`, and `/socket.io` so those are never shadowed.
+  - **Live data:** `LiveStateStore.setWorld()` now surfaces the bot's live
+    position + visible player count into the authed `GET /api/state` snapshot
+    (kept out of the public `/status.json`) to drive the minimap and widgets.
+
 - **Phase 6 — Dashboard backend.** The full server-side API for the dashboard
   (the React UI arrives in Phase 7):
   - **Three toggleable auth layers** (§8.2): login/password baseline (bcrypt

@@ -277,6 +277,9 @@ export class BehaviorEngine {
   private checkPresence(): void {
     if (!this.running || !this.bot) return;
     const state = this.buildBotState(this.bot);
+    // Feed the dashboard minimap + player-count widget (§8.4). Silent setter —
+    // the store doesn't emit on this, so the 500ms cadence costs nothing.
+    this.state.setWorld({ position: state.position, playerCount: state.players.length });
     const wasPaused = this.paused;
     if (this.updatePresence(state) && !wasPaused) {
       this.state.setActivity(PAUSED_ACTIVITY);

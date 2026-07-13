@@ -10,15 +10,22 @@
   },
   "packageManager": "npm@10.9.2",
   "main": "dist/index.js",
+  "workspaces": [
+    "web"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "dev:web": "npm run dev --workspace web",
+    "build": "tsc -p tsconfig.build.json && npm run build --workspace web",
+    "build:server": "tsc -p tsconfig.build.json",
+    "build:web": "npm run build --workspace web",
     "start": "node dist/index.js",
-    "test": "vitest run",
+    "test": "vitest run && npm run test --workspace web",
+    "test:server": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && npm run lint --workspace web",
+    "lint:fix": "eslint . --fix && npm run lint:fix --workspace web",
+    "typecheck": "tsc --noEmit && npm run typecheck --workspace web",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

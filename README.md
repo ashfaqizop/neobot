@@ -9,7 +9,7 @@
     <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-4fd8ff" />
     <img alt="Node 22" src="https://img.shields.io/badge/node-22.x-3c873a" />
     <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6" />
-    <img alt="Status: Phase 1" src="https://img.shields.io/badge/build-Phase%201%20scaffold-4fd8ff" />
+    <img alt="Status: Phase 7" src="https://img.shields.io/badge/build-Phase%207%20dashboard-4fd8ff" />
   </p>
 </div>
 
@@ -21,6 +21,7 @@ human-like simulated activity to avoid AFK-kicks and anti-cheat detection.
 
 > **Architecture principle:** one deployed instance = one bot = one server.
 > To keep multiple servers alive, deploy multiple instances from this template.
+> This Architecture is Specifically Chosen To Provide Simple Yet Robustness.
 
 ## Why it works
 
@@ -55,9 +56,14 @@ cp .env.example .env      # optional — the setup wizard can fill this in later
 npm run dev
 ```
 
-Then open the dashboard (arriving in Phase 6/7). NeoBot boots with **zero
-credentials** — Supabase and Discord are optional and can be configured through
-the first-run setup wizard.
+Then open `http://localhost:3000` for the dashboard. On first run it shows the
+**setup wizard**; after that, sign in with the admin account you create. NeoBot
+boots with **zero credentials** — Supabase and Discord are optional and can be
+configured through the wizard (secrets stay in the environment).
+
+To develop the dashboard UI with hot-reload, run the backend (`npm run dev`) and
+the Vite dev server (`npm run dev:web`) side by side — Vite proxies the API and
+Socket.IO to the backend on port 3000.
 
 ### Scripts
 
@@ -86,7 +92,7 @@ NeoBot is built phase by phase (see [`masterdoc (2).md`](<masterdoc (2).md>) §1
 - [x] **Phase 4 — Extended behaviors + hazards**: mine/swim/sneak/boat/doors/fish/eat/sleep/lookAt/itemDrop, block-interaction modes, lava/drowning/fall/mob self-preservation
 - [x] **Phase 5 — Supabase persistence**: config/live-state/events/sessions repositories with in-memory fallback, hybrid bootstrap-then-source-of-truth
 - [x] **Phase 6 — Dashboard backend**: `/api/*`, three toggleable auth layers, rate limiting, setup wizard, control actions, Socket.IO live bridge
-- [ ] Phase 7 — Dashboard frontend
+- [x] **Phase 7 — Dashboard frontend**: React + Vite + Tailwind SPA (login, setup wizard, live dashboard with 2D minimap, logs, config export/import), served by Express
 - [ ] Phase 8 — Discord bot
 - [ ] Phase 9 — Resource management, safe mode, hibernation
 - [ ] Phase 10 — Docs & release automation

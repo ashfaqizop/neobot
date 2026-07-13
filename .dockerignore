@@ -3,7 +3,8 @@ dist
 coverage
 .git
 .github
-web
+web/node_modules
+web/dist
 docs
 tests
 *.md

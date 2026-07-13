@@ -28,11 +28,7 @@ multi-server management inside a single instance.
 | Setup wizard | `src/server/setupWizard.ts` | 6 ✅ |
 | Control seam (pause/restart/…) | `src/bot/controller.ts` | 6 ✅ |
 | Socket.IO live bridge | `src/server/socket.ts` | 6 ✅ |
-| Behavior engine | `src/bot/behaviors/` | 3–4 |
-| Hazards / safe mode / hibernation | `src/bot/` | 4, 9 |
-| Persistence (Supabase) | `src/db/` | 5 |
-| Dashboard server (Express + Socket.IO) | `src/server/` | 6 |
-| Dashboard UI (React) | `web/` | 7 |
+| Dashboard UI (React SPA) | `web/` | 7 ✅ |
 | Discord bot | `src/discord/` | 8 |
 | Memory watchdog | `src/watchdog/` | 9 |
 
