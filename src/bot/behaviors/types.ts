@@ -101,6 +101,15 @@ export interface HazardsConfig {
   enabled: boolean;
 }
 
+/** Safe Mode auto-dial-back on anti-cheat pressure (masterdoc §6.3). */
+export interface SafeModeConfig {
+  /** Auto-enable Safe Mode after repeated anti-cheat kicks. */
+  autoDetect: boolean;
+  /** Anti-cheat kicks within `windowMs` that trip auto Safe Mode. */
+  antiCheatThreshold: number;
+  windowMs: number;
+}
+
 /** Resolved runtime configuration for the behavior engine. */
 export interface NeoBotConfig {
   behaviors: Record<string, BehaviorSetting>;
@@ -109,6 +118,7 @@ export interface NeoBotConfig {
   safeZone: SafeZoneConfig;
   blockInteraction: BlockInteractionConfig;
   hazards: HazardsConfig;
+  safeMode: SafeModeConfig;
   /** Humanized delay between behavior cycles. */
   cycle: { minMs: number; maxMs: number };
 }

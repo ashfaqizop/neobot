@@ -16,6 +16,8 @@ export function statusMeta(status: BotStatus): { tone: StatusTone; label: string
       return { tone: 'warn', label: 'Connecting' };
     case 'reconnecting':
       return { tone: 'warn', label: 'Reconnecting' };
+    case 'hibernating-wait':
+      return { tone: 'warn', label: 'Hibernating (waiting)' };
     case 'disconnected':
       return { tone: 'idle', label: 'Disconnected' };
     case 'banned':

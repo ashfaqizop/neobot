@@ -34,6 +34,7 @@ function config(over: Partial<NeoBotConfig> = {}): NeoBotConfig {
     safeZone: { x: null, y: null, z: null, radius: 32 },
     blockInteraction: { mode: 'off', boundless: false },
     hazards: { enabled: true },
+    safeMode: { autoDetect: false, antiCheatThreshold: 3, windowMs: 300_000 },
     cycle: { minMs: 1, maxMs: 2 },
     ...over,
   };

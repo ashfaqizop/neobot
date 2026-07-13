@@ -94,7 +94,7 @@ NeoBot is built phase by phase (see [`masterdoc (2).md`](<masterdoc (2).md>) §1
 - [x] **Phase 6 — Dashboard backend**: `/api/*`, three toggleable auth layers, rate limiting, setup wizard, control actions, Socket.IO live bridge
 - [x] **Phase 7 — Dashboard frontend**: React + Vite + Tailwind SPA (login, setup wizard, live dashboard with 2D minimap, logs, config export/import), served by Express
 - [x] **Phase 8 — Discord bot**: slash commands (`/status`, `/pause`, `/restart`, …), per-event push alerts, dashboard + Discord alert toggles
-- [ ] Phase 9 — Resource management, safe mode, hibernation
+- [x] **Phase 9 — Resource management**: memory watchdog (tiered recovery), Safe Mode auto dial-back, Aternos-style hibernation detection, self-ping fallback
 - [ ] Phase 10 — Docs & release automation
 - [ ] Phase 11 — Polish
 

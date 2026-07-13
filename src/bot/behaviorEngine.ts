@@ -68,6 +68,14 @@ interface ScanBot {
  */
 const REPEAT_DAMPING = 0.25;
 
+/**
+ * Safe Mode dial-back (masterdoc §6.3). When anti-cheat pressure is detected we
+ * restrict activity to these low-movement behaviors and stretch the cycle timing,
+ * cutting the movement complexity/frequency that pattern-based anti-cheats match.
+ */
+const SAFE_BEHAVIORS = new Set(['lookAtEntity', 'jumpLook', 'sneak', 'eat', 'sleep']);
+const SAFE_MODE_CYCLE_FACTOR = 2.5;
+
 export interface BehaviorEngineOptions {
   behaviors?: AFKBehavior[];
   /** Injectable RNG in [0,1) for deterministic tests. */
@@ -87,6 +95,7 @@ export class BehaviorEngine {
   private running = false;
   private paused = false;
   private manualPaused = false;
+  private safeMode = false;
   private hazard: HazardType | null = null;
   private lastBehaviorName: string | null = null;
   private cycleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -152,7 +161,8 @@ export class BehaviorEngine {
 
   private scheduleCycle(): void {
     if (!this.running) return;
-    const delay = randomInterval(this.config.cycle.minMs, this.config.cycle.maxMs, this.rng);
+    const base = randomInterval(this.config.cycle.minMs, this.config.cycle.maxMs, this.rng);
+    const delay = this.safeMode ? base * SAFE_MODE_CYCLE_FACTOR : base;
     this.cycleTimer = setTimeout(() => {
       void this.runCycle();
     }, delay);
@@ -214,6 +224,8 @@ export class BehaviorEngine {
   selectBehavior(state: BotState): AFKBehavior | null {
     const eligible = this.behaviors
       .filter((b) => {
+        // Safe Mode restricts to the low-movement allow-list (§6.3 dial-back).
+        if (this.safeMode && !SAFE_BEHAVIORS.has(b.name)) return false;
         const setting = this.config.behaviors[b.name];
         return Boolean(setting?.enabled) && b.canRun(state, this.config);
       })
@@ -327,6 +339,21 @@ export class BehaviorEngine {
 
   isManuallyPaused(): boolean {
     return this.manualPaused;
+  }
+
+  /**
+   * Dial movement complexity down (Safe Mode, masterdoc §6.3). While on, only the
+   * low-movement {@link SAFE_BEHAVIORS} run and cycles are stretched. Sticky
+   * across reconnects, like manual pause.
+   */
+  setSafeMode(on: boolean): void {
+    if (this.safeMode === on) return;
+    this.safeMode = on;
+    log.info({ safeMode: on }, on ? 'Safe Mode engaged — dialing back activity' : 'Safe Mode lifted');
+  }
+
+  isSafeMode(): boolean {
+    return this.safeMode;
   }
 
   /** Sleep that resolves early when the engine pauses/stops. */

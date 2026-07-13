@@ -74,6 +74,17 @@ const envSchema = z.object({
   // --- Keep-alive (masterdoc §10). Self-ping default OFF. ---
   SELF_PING_ENABLED: booleanish.default('false'),
   SELF_PING_URL: z.string().url().optional(),
+  SELF_PING_INTERVAL_MS: z.coerce.number().int().positive().default(240_000),
+
+  // --- Resource management / watchdog (masterdoc §12). ---
+  /** RSS threshold (MB) that triggers tiered recovery. ~400 for a 512MB tier. */
+  MEMORY_THRESHOLD_MB: z.coerce.number().int().positive().default(400),
+  MEMORY_CHECK_INTERVAL_MS: z.coerce.number().int().positive().default(30_000),
+  /** Grace period after a tier-1 connection restart before a full process restart. */
+  MEMORY_GRACE_MS: z.coerce.number().int().positive().default(20_000),
+
+  // --- Safe Mode auto-detection (masterdoc §6.3). On by default, toggleable. ---
+  SAFE_MODE_AUTO: booleanish.default('true'),
 
   // --- Dashboard sessions (masterdoc §8.2). Auto-generated if unset (sessions
   // then reset on restart); set a stable value in production. ---

@@ -8,6 +8,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 9 — Resource management, Safe Mode & hibernation.** The resilience
+  layer for unattended runs on a 512 MB free tier (masterdoc §12, §6.3, §10):
+  - **Memory watchdog** (`src/watchdog/memoryWatchdog.ts`): polls process RSS and,
+    on crossing a threshold, recovers in tiers — restart the connection subsystem
+    first (cheap, + a GC nudge), then restart the whole process if memory hasn't
+    recovered after a grace period (host manager brings it back). Emits
+    `low_memory` alerts. `NODE_OPTIONS=--max-old-space-size=400` in the Docker
+    runtime.
+  - **Safe Mode auto dial-back** (`src/bot/safeMode.ts` + engine): repeated
+    anti-cheat kicks within a window auto-engage Safe Mode, which restricts the
+    behavior engine to a low-movement allow-list and stretches cycle timing
+    (§6.3). On by default, toggleable (`SAFE_MODE_AUTO` / dashboard). Wires the
+    long-standing `BotController.setSafeMode` flag to real behavior.
+  - **Aternos-style hibernation detection** (`src/bot/hibernation.ts` +
+    `kickReasons.ts`): "server starting / in queue / offline" disconnects are
+    detected and polled on a steady interval as a new `hibernating-wait` status —
+    without counting against the max-retry budget — instead of failing.
+  - **Self-ping fallback** (`src/watchdog/selfPing.ts`): optional internal ping of
+    `/status.json` (default OFF; guards AFK only, cannot revive a slept host).
+  - Process guards now emit a `crash` alert on recovered uncaught errors, lighting
+    up the last of the Phase 8 alert keys.
+  - New env: `MEMORY_THRESHOLD_MB`, `MEMORY_CHECK_INTERVAL_MS`, `MEMORY_GRACE_MS`,
+    `SAFE_MODE_AUTO`, `SELF_PING_INTERVAL_MS`.
+
 - **Phase 8 — Discord bot.** An optional, toggleable `discord.js` bot for remote
   control and alerts (masterdoc §11), gated by `hasDiscord()` — with no token it
   never starts, and any Discord failure is swallowed so the keep-alive daemon

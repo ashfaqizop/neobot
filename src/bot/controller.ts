@@ -19,6 +19,7 @@ export interface ConnectionControls {
 export interface EngineControls {
   setManualPause(paused: boolean): void;
   isManuallyPaused(): boolean;
+  setSafeMode(on: boolean): void;
 }
 
 export interface StateSource {
@@ -56,10 +57,11 @@ export class BotController {
     this.connection.reconnectNow();
   }
 
-  /** Manual Safe Mode toggle. Real movement dial-back arrives in Phase 9. */
+  /** Safe Mode toggle — flips the reported flag and dials back the engine (§6.3). */
   setSafeMode(on: boolean): void {
     this.safeModeOn = on;
-    log.warn({ safeMode: on }, 'Safe Mode toggled (auto dial-back arrives in Phase 9)');
+    this.engine.setSafeMode(on);
+    log.info({ safeMode: on }, on ? 'Safe Mode enabled' : 'Safe Mode disabled');
   }
 
   isSafeMode(): boolean {

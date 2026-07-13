@@ -13,6 +13,7 @@ export type BotStatus =
   | 'connected'
   | 'reconnecting'
   | 'disconnected'
+  | 'hibernating-wait' // host asleep / starting (Aternos-style) — poll, don't fail
   | 'banned' // terminal: stop retrying
   | 'fatal'; // terminal: unrecoverable (e.g. unsupported version)
 
@@ -24,6 +25,7 @@ export type DisconnectCategory =
   | 'server_restart'
   | 'server_full'
   | 'anticheat'
+  | 'hibernating' // host asleep / starting up (Aternos-style)
   | 'network'
   | 'unknown';
 
@@ -32,6 +34,7 @@ export type RetryStrategy =
   | 'immediate' // reconnect right away (e.g. AFK-kick)
   | 'backoff' // exponential backoff (default)
   | 'long' // back off to a long interval (e.g. whitelist rejection)
+  | 'poll' // steady interval, does NOT count toward max-retries (hibernation)
   | 'none'; // terminal — do not retry (e.g. banned)
 
 /** Result of classifying a disconnect reason string. */

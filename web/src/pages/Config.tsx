@@ -214,6 +214,12 @@ export function ConfigPage() {
               label="Hazard self-preservation"
               hint="Avoid lava, drowning, mobs, and fall edges."
             />
+            <Toggle
+              checked={c.behavior.safeMode.autoDetect}
+              onChange={(v) => update((d) => (d.behavior.safeMode.autoDetect = v))}
+              label="Safe Mode auto-detect"
+              hint="Dial back movement after repeated anti-cheat kicks. Applies on restart."
+            />
             <NumField
               label="Player-pause radius"
               value={c.behavior.playerPause.radius}

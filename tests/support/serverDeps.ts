@@ -12,7 +12,7 @@ import { env } from '../../src/config/env.js';
 export function fakeControls() {
   return {
     connection: { restart: vi.fn(), reconnectNow: vi.fn() },
-    engine: { setManualPause: vi.fn(), isManuallyPaused: vi.fn(() => false) },
+    engine: { setManualPause: vi.fn(), isManuallyPaused: vi.fn(() => false), setSafeMode: vi.fn() },
   };
 }
 

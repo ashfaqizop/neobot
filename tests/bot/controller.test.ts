@@ -4,7 +4,7 @@ import { LiveStateStore } from '../../src/bot/state.js';
 
 function make() {
   const connection = { restart: vi.fn(), reconnectNow: vi.fn() };
-  const engine = { setManualPause: vi.fn(), isManuallyPaused: vi.fn(() => false) };
+  const engine = { setManualPause: vi.fn(), isManuallyPaused: vi.fn(() => false), setSafeMode: vi.fn() };
   const state = new LiveStateStore();
   const controller = new BotController(connection, engine, state);
   return { controller, connection, engine };

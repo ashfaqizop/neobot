@@ -88,6 +88,28 @@ alerts** panel or the `/alerts` command. Default is all-on.
 > channel only trusted members can reach. Role-based restriction is a planned
 > enhancement, not required for v1.
 
+## Resource management & resilience (Phase 9)
+
+NeoBot is built to survive unattended on a 512 MB free tier (masterdoc §12):
+
+- **Memory watchdog.** Process RSS is polled against `MEMORY_THRESHOLD_MB`
+  (default 400). On crossing it, recovery is **tiered**: first restart the
+  Mineflayer connection alone (cheap); if memory hasn't recovered after
+  `MEMORY_GRACE_MS`, the process exits so the host's manager restarts it fresh.
+  The Docker image sets `NODE_OPTIONS=--max-old-space-size=400` to cap the V8
+  heap below the container ceiling.
+- **Safe Mode.** After repeated anti-cheat kicks (`SAFE_MODE_AUTO`, on by
+  default), NeoBot dials movement complexity/frequency down automatically to
+  shake pattern-based anti-cheat. Toggle it manually from the dashboard, the
+  Discord `/safe-mode` command, or disable auto-detection in config.
+- **Hibernation (Aternos-style).** "Server starting / in queue / offline" join
+  states are detected and **polled** on a steady interval (status
+  `hibernating-wait`) instead of burning the reconnect budget — the bot rejoins
+  once the host actually wakes.
+- **Self-ping fallback.** Set `SELF_PING_ENABLED=true` (default off) for an
+  internal ping of `/status.json`. It only guards in-game AFK-kicks — it **cannot
+  revive an already-slept host**, so UptimeRobot remains the primary keep-alive.
+
 ## Render (planned)
 
 A one-click **Deploy to Render** button and a `render.yaml` Blueprint

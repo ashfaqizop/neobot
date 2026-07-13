@@ -48,6 +48,7 @@ const STATUS_COLOR: Record<BotStatus, number> = {
   connected: OK,
   connecting: WARN,
   reconnecting: WARN,
+  'hibernating-wait': WARN,
   disconnected: IDLE,
   banned: DANGER,
   fatal: DANGER,

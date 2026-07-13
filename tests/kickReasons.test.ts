@@ -51,6 +51,21 @@ describe('classifyDisconnectReason (masterdoc §6 table)', () => {
     expect(c.retry).toBe('backoff');
   });
 
+  it('hibernating/starting host (Aternos-style) → poll retry, not a real failure', () => {
+    for (const reason of ['Server is starting, please wait', 'Position in queue: 3', 'Server is offline']) {
+      const c = classifyDisconnectReason(reason);
+      expect(c.category).toBe('hibernating');
+      expect(c.retry).toBe('poll');
+      expect(c.terminal).toBe(false);
+    }
+  });
+
+  it('"restarting" is a normal restart (backoff), not hibernation', () => {
+    expect(classifyDisconnectReason('Server is restarting, please reconnect').category).toBe(
+      'server_restart',
+    );
+  });
+
   it('network/socket errors → backoff retry', () => {
     expect(classifyDisconnectReason('socketClosed').category).toBe('network');
     expect(classifyDisconnectReason('read ECONNRESET').category).toBe('network');

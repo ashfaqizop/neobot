@@ -29,6 +29,11 @@ import type { AppConfig } from './config/appConfig.js';
 import { startDiscord } from './discord/index.js';
 import type { DiscordAlerter } from './discord/alerts.js';
 import { ALERT_KEYS } from './discord/presenters.js';
+import { SafeModeManager } from './bot/safeMode.js';
+import { MemoryWatchdog } from './watchdog/memoryWatchdog.js';
+import { startSelfPing, type SelfPingHandle } from './watchdog/selfPing.js';
+import type { AlertEvent } from './bot/types.js';
+import type { EventLevel } from './db/types.js';
 
 /** Map persisted connection config to the manager's connect options (or null). */
 function connectOptions(conn: ConnectionConfig): BotConnectOptions | null {
@@ -44,7 +49,7 @@ function connectOptions(conn: ConnectionConfig): BotConnectOptions | null {
 async function main(): Promise<void> {
   logger.info(
     { nodeEnv: env.NODE_ENV, port: env.PORT, version: process.env.npm_package_version ?? '0.1.0' },
-    'NeoBot starting (Phase 8 — Discord bot)',
+    'NeoBot starting (Phase 9 — resource management)',
   );
 
   // Persistence: Supabase when configured, else in-memory (zero-cred boot).
@@ -72,23 +77,39 @@ async function main(): Promise<void> {
   attachStatePersistence(state, repos);
 
   // Discord (Phase 8) is optional; the alerter is wired in after it starts, so
-  // this holder lets the connection's alert hook reach it once available.
+  // this holder lets alert sources reach it once available.
   let discordAlerter: DiscordAlerter | null = null;
+  let safeModeManager: SafeModeManager | null = null;
+
+  // Single alert fan-out: structured log + persisted event + Discord push (§11).
+  const dispatchAlert = (event: AlertEvent, category = 'connection', level: EventLevel = 'warn'): void => {
+    logger[level === 'error' ? 'error' : 'warn']({ alert: event.key, meta: event.meta }, event.message);
+    void repos.events
+      .append({ level, category, message: event.message, meta: event.meta })
+      .catch((err: unknown) => logger.warn({ err }, 'events.append failed'));
+    void discordAlerter?.dispatch(event);
+  };
 
   const engine = new BehaviorEngine(state, initialConfig.behavior);
   const connection = new ConnectionManager(state, {
     getConfig: () => connectOptions(currentConfig.connection),
     onBotReady: (bot) => engine.start(bot as unknown as Bot),
     onBotEnd: () => engine.stop(),
-    onAlert: (event) => {
-      logger.warn({ alert: event.key, meta: event.meta }, event.message);
-      void repos.events
-        .append({ level: 'warn', category: 'connection', message: event.message, meta: event.meta })
-        .catch((err: unknown) => logger.warn({ err }, 'events.append failed'));
-      void discordAlerter?.dispatch(event);
-    },
+    onAlert: (event) => dispatchAlert(event, 'connection'),
+    // Repeated anti-cheat kicks auto-engage Safe Mode dial-back (§6.3).
+    onAntiCheat: () => safeModeManager?.recordAntiCheat(),
   });
   const controller = new BotController(connection, engine, state);
+
+  // Safe Mode auto-detection (masterdoc §6.3). Config values apply on restart.
+  const smc = currentConfig.behavior.safeMode;
+  safeModeManager = new SafeModeManager({
+    threshold: smc.antiCheatThreshold,
+    windowMs: smc.windowMs,
+    autoDetect: smc.autoDetect,
+    setSafeMode: (on) => controller.setSafeMode(on),
+    onAlert: (event) => dispatchAlert(event, 'behavior'),
+  });
 
   const app = createApp({ state, repos, controller, config: configHolder });
   const server: Server = startServer(app, env.PORT);
@@ -98,6 +119,23 @@ async function main(): Promise<void> {
   const discord = await startDiscord({ controller, repos, getConfig: () => currentConfig });
   discordAlerter = discord?.alerter ?? null;
 
+  // Memory watchdog — tiered recovery on the 512MB free-tier ceiling (§12).
+  const watchdog = new MemoryWatchdog({
+    thresholdBytes: env.MEMORY_THRESHOLD_MB * 1024 * 1024,
+    checkIntervalMs: env.MEMORY_CHECK_INTERVAL_MS,
+    graceMs: env.MEMORY_GRACE_MS,
+    restartConnection: () => controller.restart(),
+    restartProcess: () => process.exit(1),
+    onAlert: (event) => dispatchAlert(event, 'watchdog'),
+  }).start();
+
+  // Optional self-ping keep-alive fallback (default OFF; §10).
+  let selfPing: SelfPingHandle | null = null;
+  if (env.SELF_PING_ENABLED) {
+    const url = env.SELF_PING_URL ?? `http://localhost:${env.PORT}/status.json`;
+    selfPing = startSelfPing({ url, intervalMs: env.SELF_PING_INTERVAL_MS });
+  }
+
   connection.start();
 
   let shuttingDown = false;
@@ -105,6 +143,8 @@ async function main(): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
     logger.info({ signal }, 'Shutting down NeoBot');
+    watchdog.stop();
+    selfPing?.stop();
     engine.stop();
     connection.stop();
     void discord?.stop().catch(() => undefined);
@@ -120,12 +160,22 @@ async function main(): Promise<void> {
   process.on('SIGTERM', shutdown);
 
   // Resilience: NeoBot is a keep-alive daemon — a stray async error from a
-  // dependency must never take the process down (Phase 9 handles true recovery).
+  // dependency must never take the process down. Surface it as a `crash` alert.
   process.on('unhandledRejection', (reason) => {
     logger.error({ reason }, 'Unhandled promise rejection (kept alive)');
+    dispatchAlert(
+      { key: 'crash', message: `Unhandled rejection (recovered): ${String(reason)}` },
+      'watchdog',
+      'error',
+    );
   });
   process.on('uncaughtException', (err) => {
     logger.error({ err }, 'Uncaught exception (kept alive)');
+    dispatchAlert(
+      { key: 'crash', message: `Uncaught exception (recovered): ${err.message}` },
+      'watchdog',
+      'error',
+    );
   });
 }
 

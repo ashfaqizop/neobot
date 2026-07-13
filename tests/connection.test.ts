@@ -106,6 +106,32 @@ describe('ConnectionManager', () => {
     );
   });
 
+  it('hibernating host → polls without counting retries and shows hibernating-wait', () => {
+    const onAlert = vi.fn();
+    const cm = new ConnectionManager(state, {
+      getConfig: () => CONFIG,
+      botFactory,
+      maxRetries: 2,
+      hibernationPollMs: 5000,
+      onAlert,
+    });
+    cm.start();
+
+    // Repeatedly hit the hibernation state far more than maxRetries.
+    for (let i = 0; i < 6; i++) {
+      bots[bots.length - 1]!.emit('end', 'Server is starting, please wait');
+      expect(state.getStatus()).toBe('hibernating-wait');
+      vi.advanceTimersByTime(5000); // steady poll interval → new bot
+    }
+
+    // Never gave up (poll doesn't trip maxRetries) and alerted once on entry.
+    bots[bots.length - 1]!.emit('end', 'Position in queue: 1');
+    expect(state.getStatus()).toBe('hibernating-wait');
+    expect(onAlert).toHaveBeenCalledTimes(1);
+    expect(onAlert).toHaveBeenCalledWith(expect.objectContaining({ key: 'hibernating' }));
+    expect(bots.length).toBeGreaterThan(3);
+  });
+
   it('absorbs a late error from a discarded bot without crashing (regression)', () => {
     // mineflayer's auto-version ping can emit 'error' on the old bot AFTER
     // teardown; without an absorber this throws and kills the daemon.

@@ -12,6 +12,7 @@
  * `anticheat`.
  */
 import type { DisconnectCategory, DisconnectClassification } from './types.js';
+import { HIBERNATION_PATTERNS } from './hibernation.js';
 
 interface Rule {
   category: DisconnectCategory;
@@ -60,6 +61,10 @@ const RULES: Rule[] = [
       /suspicious/i,
     ],
   ),
+
+  // Hibernating / starting host (Aternos-style) — poll, don't count retries.
+  // Checked before server_restart so "server is restarting/starting" wins here.
+  rule('hibernating', { terminal: false, retry: 'poll', alert: true }, HIBERNATION_PATTERNS),
 
   // Server full — retry with back-off.
   rule(

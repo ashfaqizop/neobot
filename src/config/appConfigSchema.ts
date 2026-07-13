@@ -26,6 +26,11 @@ export const neoBotConfigSchema = z.object({
     boundless: z.boolean(),
   }),
   hazards: z.object({ enabled: z.boolean() }),
+  safeMode: z.object({
+    autoDetect: z.boolean(),
+    antiCheatThreshold: z.number().int().positive(),
+    windowMs: z.number().positive(),
+  }),
   cycle: z.object({ minMs: z.number().nonnegative(), maxMs: z.number().nonnegative() }),
 });
 

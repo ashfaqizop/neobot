@@ -10,6 +10,7 @@ export type BotStatus =
   | 'connecting'
   | 'connected'
   | 'reconnecting'
+  | 'hibernating-wait'
   | 'disconnected'
   | 'banned'
   | 'fatal';
@@ -82,6 +83,7 @@ export interface NeoBotConfig {
   safeZone: { x: number | null; y: number | null; z: number | null; radius: number };
   blockInteraction: { mode: 'off' | 'self-placed-only' | 'radius-any'; boundless: boolean };
   hazards: { enabled: boolean };
+  safeMode: { autoDetect: boolean; antiCheatThreshold: number; windowMs: number };
   cycle: { minMs: number; maxMs: number };
 }
 

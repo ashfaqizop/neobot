@@ -22,7 +22,7 @@ import { env } from '../config/env.js';
 import { computeBackoff } from './backoff.js';
 import { classifyDisconnectReason } from './kickReasons.js';
 import type { LiveStateStore } from './state.js';
-import type { AlertEvent } from './types.js';
+import type { AlertEvent, RetryStrategy } from './types.js';
 
 const log = childLogger('connection');
 
@@ -57,6 +57,8 @@ export interface ConnectionManagerOptions {
   immediateRetryMs?: number;
   /** Delay for `long` retries (e.g. whitelist rejection). */
   longRetryMs?: number;
+  /** Steady poll interval while the host is hibernating/starting (masterdoc §12). */
+  hibernationPollMs?: number;
   /** Operator alert sink (Phase 8 Discord). Defaults to a structured warn log. */
   onAlert?: (event: AlertEvent) => void;
   /** Anti-cheat dial-back hook (Phase 9 Safe Mode). Defaults to a log. */
@@ -126,10 +128,13 @@ export class ConnectionManager {
   private readonly onBotReady: (bot: BotLike) => void;
   private readonly onBotEnd: () => void;
 
+  private readonly hibernationPollMs: number;
+
   private bot: BotLike | null = null;
   private attempt = 0;
   private connected = false;
   private stopped = false;
+  private hibernating = false;
   private pendingKickReason: string | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -145,6 +150,7 @@ export class ConnectionManager {
     this.jitterMs = opts.jitterMs ?? 1_000;
     this.immediateRetryMs = opts.immediateRetryMs ?? 1_500;
     this.longRetryMs = opts.longRetryMs ?? 30 * 60 * 1_000;
+    this.hibernationPollMs = opts.hibernationPollMs ?? 30_000;
     this.onAlert =
       opts.onAlert ?? ((e) => log.warn({ alert: e.key, meta: e.meta }, e.message));
     this.onAntiCheat =
@@ -210,6 +216,7 @@ export class ConnectionManager {
     if (this.connected) return; // 'login' + 'spawn' can both fire
     this.connected = true;
     this.attempt = 0;
+    this.hibernating = false; // the host is up — leave any hibernation wait
     this.state.recordSessionStart();
     this.state.setStatus('connected', 'idle');
     log.info('Connected to Minecraft server');
@@ -233,6 +240,29 @@ export class ConnectionManager {
 
     const classification = classifyDisconnectReason(reason);
     log.info({ reason, ...classification }, 'Disconnected — classified reason');
+
+    // Hibernating/starting host (Aternos-style, masterdoc §12): poll on a steady
+    // interval, DON'T count it against max-retries, and alert only on entering
+    // the wait (not every poll).
+    if (classification.retry === 'poll') {
+      if (!this.hibernating) {
+        this.hibernating = true;
+        this.onAlert({
+          key: 'hibernating',
+          message: `Host appears to be starting or asleep — polling until it's up: ${reason}`,
+          category: 'hibernating',
+        });
+      }
+      this.state.setStatus('hibernating-wait', null);
+      this.reconnectTimer = setTimeout(() => {
+        this.reconnectTimer = null;
+        this.connect(config);
+      }, this.hibernationPollMs);
+      return;
+    }
+
+    // Any non-hibernation disconnect clears the wait state.
+    this.hibernating = false;
 
     if (classification.alert) {
       this.onAlert({
@@ -273,12 +303,14 @@ export class ConnectionManager {
     }, delay);
   }
 
-  private retryDelay(strategy: 'immediate' | 'backoff' | 'long' | 'none'): number {
+  private retryDelay(strategy: RetryStrategy): number {
     switch (strategy) {
       case 'immediate':
         return this.immediateRetryMs;
       case 'long':
         return this.longRetryMs;
+      case 'poll':
+        return this.hibernationPollMs;
       case 'none':
         return 0;
       case 'backoff':

@@ -44,6 +44,7 @@ function makeConfig(overrides: Partial<NeoBotConfig> = {}): NeoBotConfig {
     safeZone: { x: null, y: null, z: null, radius: 32 },
     blockInteraction: { mode: 'off', boundless: false },
     hazards: { enabled: true },
+    safeMode: { autoDetect: false, antiCheatThreshold: 3, windowMs: 300_000 },
     cycle: { minMs: 3000, maxMs: 9000 },
     ...overrides,
   };
@@ -129,6 +130,24 @@ describe('BehaviorEngine', () => {
     });
     // beta is ineligible (canRun false), disabledOne is disabled in config → alpha.
     expect(engine.selectBehavior(baseState)?.name).toBe('alpha');
+  });
+
+  it('Safe Mode restricts selection to the low-movement allow-list (§6.3)', () => {
+    const engine = new BehaviorEngine(
+      state,
+      makeConfig({ behaviors: { walk: { enabled: true, weight: 5 }, sneak: { enabled: true, weight: 1 } } }),
+      { behaviors: [fakeBehavior('walk'), fakeBehavior('sneak')], rng: () => 0.1 },
+    );
+    // Normally 'walk' is eligible; Safe Mode should exclude it (not in SAFE_BEHAVIORS).
+    engine.setSafeMode(true);
+    expect(engine.isSafeMode()).toBe(true);
+    for (let i = 0; i < 12; i++) {
+      expect(engine.selectBehavior(baseState)?.name).not.toBe('walk');
+    }
+    expect(engine.selectBehavior(baseState)?.name).toBe('sneak');
+    // Lifting Safe Mode restores the full set.
+    engine.setSafeMode(false);
+    expect(engine.isSafeMode()).toBe(false);
   });
 
   it('runs the selected behavior and reflects it as currentActivity', async () => {

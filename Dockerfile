@@ -25,6 +25,9 @@ RUN npm ci --omit=dev
 # --- Stage 3: minimal runtime image ---
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
+# Cap the V8 heap for the 512MB free-tier ceiling (masterdoc §12); the memory
+# watchdog handles RSS-level recovery above this.
+ENV NODE_OPTIONS=--max-old-space-size=400
 WORKDIR /app
 
 # Run as the built-in unprivileged "node" user.

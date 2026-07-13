@@ -31,6 +31,9 @@ multi-server management inside a single instance.
 | Dashboard UI (React SPA) | `web/` | 7 ✅ |
 | Discord bot (commands + alerts) | `src/discord/` | 8 ✅ |
 | Alert-settings API | `src/server/routes/alerts.ts` | 8 ✅ |
+| Memory watchdog + self-ping | `src/watchdog/` | 9 ✅ |
+| Safe Mode auto dial-back | `src/bot/safeMode.ts` | 9 ✅ |
+| Hibernation detection | `src/bot/hibernation.ts` | 9 ✅ |
 | Dashboard UI (React SPA) | `web/` | 7 ✅ |
 | Discord bot | `src/discord/` | 8 |
 | Memory watchdog | `src/watchdog/` | 9 |

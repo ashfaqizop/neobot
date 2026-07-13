@@ -69,6 +69,11 @@ export function buildDefaultConfig(env: Env): NeoBotConfig {
     hazards: {
       enabled: env.HAZARD_AVOIDANCE_ENABLED,
     },
+    safeMode: {
+      autoDetect: env.SAFE_MODE_AUTO,
+      antiCheatThreshold: 3,
+      windowMs: 5 * 60 * 1_000,
+    },
     cycle: { minMs: 3_000, maxMs: 9_000 },
   };
 }
