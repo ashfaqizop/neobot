@@ -77,9 +77,29 @@ Socket.IO to the backend on port 3000.
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Run the compiled build |
 | `npm test` | Run the Vitest suite |
+| `npm run test:live` | Live end-to-end suite (real bot ↔ local Minecraft world, real HTTP + Socket.IO) |
+| `npm run test:e2e` | Browser UI journey through the real dashboard (Playwright) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run format` | Prettier |
+
+### Live & end-to-end testing
+
+Beyond the hermetic unit suite (`npm test`), two **opt-in** suites exercise the
+app for real (they're excluded from CI so it stays fast):
+
+- **`npm run test:live`** boots a real Minecraft world in-process
+  ([flying-squid](https://github.com/PrismarineJS/flying-squid)) and runs the
+  actual Mineflayer bot against it — connect, spawn, anti-AFK activity, and
+  injected faults (kick → reconnect, hibernation poll, Safe Mode dial-back,
+  memory-watchdog tiers). It also boots the real Express server and drives the
+  full dashboard lifecycle (setup wizard → login → session → rate-limit →
+  control → Socket.IO). Optional **Discord** and **Supabase** smoke tests run
+  automatically when you provide credentials in a local `.env`, and skip cleanly
+  otherwise.
+- **`npm run test:e2e`** drives the built dashboard in a real browser (Playwright)
+  through the first-run journey. Headed by default so you can watch it; set
+  `PWHEADLESS=1` for a headless run.
 
 ## Deployment
 

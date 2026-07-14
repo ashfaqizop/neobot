@@ -8,6 +8,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 11 — Polish & live QA.** A first full end-to-end shakedown against real
+  infrastructure, plus final polish (masterdoc §18.11):
+  - **Live test suite** (`npm run test:live`, opt-in / not in CI): the real
+    Mineflayer bot runs against an in-process Minecraft world (flying-squid) —
+    connect, spawn, anti-AFK activity, and injected faults (kick → reconnect,
+    hibernation poll, Safe Mode dial-back, memory-watchdog tier1→tier2). The real
+    Express server is booted and driven through the whole dashboard lifecycle
+    (setup wizard → login → session → rate-limit lockout → control → Socket.IO).
+    Credential-gated **Discord** and **Supabase** smoke tests activate from a
+    local `.env` and skip cleanly without one.
+  - **Browser E2E** (`npm run test:e2e`, Playwright): the built dashboard is
+    driven in a real browser through the first-run journey (wizard → login →
+    dashboard → nav), asserting no uncaught page errors.
+  - **Optional live-status badge**: a public `GET /badge.json` endpoint serves the
+    Shields.io endpoint schema, so any deployment can embed a live status badge.
+  - Doc refresh: documented the live/e2e suites in the README and CONTRIBUTING,
+    and removed stale "arriving in a later phase" copy.
+
 - **Phase 10 — Docs & release automation.** Made NeoBot deployable and releasable
   by others (masterdoc §18.10):
   - **Deploy to Render.** A `render.yaml` Blueprint (`runtime: docker`,

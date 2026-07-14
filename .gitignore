@@ -20,6 +20,9 @@ npm-debug.log*
 # Test / coverage
 coverage/
 .vitest/
+test-results/
+playwright-report/
+.playwright/
 
 # Editors & OS
 .vscode/

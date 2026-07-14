@@ -16,6 +16,19 @@ an external monitor pings to keep the process awake.
   already-slept process, so it only guards against in-game AFK-kicks, not host
   sleep.
 
+## Live status badge (optional)
+
+NeoBot serves a public `GET /badge.json` in the [Shields.io endpoint
+format](https://shields.io/badges/endpoint-badge). Embed a live status badge for
+your deployment with:
+
+```
+https://img.shields.io/endpoint?url=https://<your-service>.onrender.com/badge.json
+```
+
+It reflects the bot's live status (`connected` green, `reconnecting`/
+`hibernating-wait` yellow, `banned`/`disconnected` red).
+
 ## Supabase (persistence)
 
 Free hosts have **ephemeral disk** — anything not in Supabase or git is lost on

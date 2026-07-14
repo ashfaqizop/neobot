@@ -33,4 +33,22 @@ describe('status routes (public, no auth — masterdoc §10)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
   });
+
+  it('GET /badge.json returns the Shields.io endpoint schema (§18.11)', async () => {
+    state.setStatus('connected', 'wandering');
+    const res = await request(app).get('/badge.json');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      schemaVersion: 1,
+      label: 'neobot',
+      message: 'connected',
+      color: 'brightgreen',
+    });
+  });
+
+  it('GET /badge.json colors a degraded status red', async () => {
+    state.setStatus('banned', null);
+    const res = await request(app).get('/badge.json');
+    expect(res.body).toMatchObject({ message: 'banned', color: 'red' });
+  });
 });

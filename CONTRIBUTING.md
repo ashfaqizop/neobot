@@ -25,6 +25,17 @@ npm run build       # Compile
 Write unit tests alongside your changes (Vitest) rather than bolting them on
 afterward.
 
+### Live & end-to-end suites (optional)
+
+Two heavier suites exercise the app for real and are **not** part of CI:
+
+- `npm run test:live` — runs the real bot against an in-process Minecraft world
+  (flying-squid) plus the real HTTP/Socket.IO server. Discord/Supabase smoke
+  tests activate when a local `.env` has credentials, and skip otherwise.
+- `npm run test:e2e` — drives the built dashboard in a real browser (Playwright).
+
+Run these before shipping changes to the bot, server, or dashboard.
+
 ## Commit & PR guidelines
 
 - Use clear, descriptive commit messages. We loosely follow
@@ -39,8 +50,7 @@ The anti-AFK behavior engine is a plugin system: each behavior is an independent
 module implementing a shared interface and registered in
 `src/bot/behaviors/index.ts`. You can add a new behavior without touching core
 logic. A full guide lives in
-[`docs/BEHAVIOR_MODULE_GUIDE.md`](docs/BEHAVIOR_MODULE_GUIDE.md) (added in a
-later phase).
+[`docs/BEHAVIOR_MODULE_GUIDE.md`](docs/BEHAVIOR_MODULE_GUIDE.md).
 
 ## Code style
 
