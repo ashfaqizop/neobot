@@ -39,9 +39,17 @@ NeoBot runs on an in-memory fallback (data resets on restart).
 To enable durable persistence:
 
 1. Create a free project at [supabase.com](https://supabase.com/).
-2. In the project's **SQL editor**, run the contents of
-   [`src/db/schema.sql`](../src/db/schema.sql) once (creates the six tables).
+2. **Run the schema _before_ your first deploy.** In the project's **SQL editor**,
+   run the contents of [`src/db/schema.sql`](../src/db/schema.sql) once (creates the
+   six tables). Supabase can take a few seconds to expose brand-new tables via its
+   API cache.
 3. Set `SUPABASE_URL` and `SUPABASE_KEY` (service role key) in your environment.
+
+> **Resilience:** if NeoBot boots against a configured Supabase whose tables don't
+> exist yet (schema not run, or the API cache hasn't refreshed), it retries
+> briefly, then logs a loud warning and **falls back to in-memory for that boot**
+> instead of crashing — so a forgotten schema never turns into a crash-looping
+> deploy. Create the tables and restart to restore durability.
 
 **Bootstrap behavior (masterdoc §9):** on the *first* run, NeoBot seeds the
 `config` table from your `.env`. After that, **Supabase is the source of truth** —

@@ -122,11 +122,47 @@ By default, data lives in memory and resets on restart. For durable config, logs
 and session history:
 
 1. Create a free project at [supabase.com](https://supabase.com/).
-2. In the project's **SQL Editor**, paste the contents of
-   [`src/db/schema.sql`](src/db/schema.sql) and click **Run** (creates six tables).
+2. **⚠️ Create the tables first — do this _before_ you deploy.** In the project's
+   **SQL Editor**, paste the following (the exact contents of
+   [`src/db/schema.sql`](src/db/schema.sql)) and click **Run**:
+
+   ```sql
+   create table if not exists config (
+     id int primary key default 1, data jsonb not null,
+     updated_at timestamptz default now(), constraint singleton check (id = 1)
+   );
+   create table if not exists live_state (
+     id int primary key default 1, status text not null, current_activity text,
+     last_updated timestamptz default now(), data jsonb, constraint singleton check (id = 1)
+   );
+   create table if not exists events (
+     id bigserial primary key, created_at timestamptz default now(),
+     level text not null, category text not null, message text not null, meta jsonb
+   );
+   create table if not exists sessions (
+     id bigserial primary key, connected_at timestamptz,
+     disconnected_at timestamptz, disconnect_reason text
+   );
+   create table if not exists admin_users (
+     id bigserial primary key, username text unique not null,
+     password_hash text not null, created_at timestamptz default now()
+   );
+   create table if not exists alert_settings (
+     event_key text primary key, enabled boolean default true
+   );
+   create index if not exists events_created_at_idx on events (created_at desc);
+   create index if not exists sessions_connected_at_idx on sessions (connected_at desc);
+   ```
+
+   You should see **"Success. No rows returned."** (Supabase may take a few
+   seconds to expose brand-new tables via its API cache.)
 3. Set `SUPABASE_URL` and `SUPABASE_KEY` (use the **service_role** key) and restart —
    on Render via the service's **Environment** tab; locally via a `.env` started
    with `node --env-file=.env dist/index.js`.
+
+> If NeoBot boots against Supabase before the tables exist, it now logs a loud
+> warning and falls back to in-memory for that boot instead of crashing — but you
+> lose durability until you create the tables and restart. So run the SQL first.
 
 ### 6. (Optional) Discord alerts & control
 

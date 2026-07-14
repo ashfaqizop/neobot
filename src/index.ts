@@ -23,7 +23,7 @@ import { BotController } from './bot/controller.js';
 import { createApp, startServer } from './server/app.js';
 import { attachSocket } from './server/socket.js';
 import type { ConfigHolder } from './server/deps.js';
-import { createRepositories } from './db/repositories/index.js';
+import { createRepositoriesReady } from './db/repositories/index.js';
 import { attachStatePersistence } from './db/statePersistence.js';
 import type { AppConfig } from './config/appConfig.js';
 import { startDiscord } from './discord/index.js';
@@ -52,8 +52,11 @@ async function main(): Promise<void> {
     'NeoBot starting (Phase 9 — resource management)',
   );
 
-  // Persistence: Supabase when configured, else in-memory (zero-cred boot).
-  const repos = createRepositories();
+  // Persistence: Supabase when configured (verified reachable + migrated, with a
+  // brief retry for the PostgREST schema-cache race), else in-memory. A
+  // configured-but-broken Supabase degrades to in-memory with a loud warning
+  // rather than crash-looping the boot (masterdoc "always boots").
+  const repos = await createRepositoriesReady();
   await repos.alertSettings.ensureDefaults(ALERT_KEYS);
 
   // Config: bootstrap from env on first run, then Supabase is source of truth.

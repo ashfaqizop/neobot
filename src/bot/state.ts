@@ -17,8 +17,27 @@ import type {
   StatusPayload,
 } from './types.js';
 import type { Point } from './behaviors/types.js';
+import { readFileSync } from 'node:fs';
 
-const APP_VERSION = process.env.npm_package_version ?? '0.1.0';
+/**
+ * Reported app version. `npm_package_version` is only set when launched via an
+ * npm script (dev); under `node dist/index.js` (prod) it's unset, so read the
+ * shipped package.json (two levels up from this module in both src and dist)
+ * at runtime rather than hard-coding a version that goes stale.
+ */
+function resolveVersion(): string {
+  if (process.env.npm_package_version) return process.env.npm_package_version;
+  try {
+    const pkg = JSON.parse(
+      readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+    ) as { version?: string };
+    return pkg.version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+const APP_VERSION = resolveVersion();
 const MAX_HISTORY = 50;
 
 export interface StateSnapshot {

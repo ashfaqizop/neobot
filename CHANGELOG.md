@@ -6,6 +6,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-07-14
+
+### Fixed
+
+- **Boot no longer crash-loops on a Supabase error.** When Supabase is configured
+  but unreachable or not yet migrated (e.g. `schema.sql` wasn't run, or
+  PostgREST's schema cache hasn't refreshed after creating the tables), startup
+  previously threw on the first query and exited — causing a crash-looping
+  "Failed deploy" on Render. Now `createRepositoriesReady()` probes Supabase with
+  a short retry (handling the transient schema-cache race) and, on persistent
+  failure, **falls back to in-memory with a loud, actionable warning** so the
+  service still boots (masterdoc "always boots / survives failure").
+- **Correct reported version.** `/status.json` (and the status badge source) read
+  the shipped `package.json` version instead of `npm_package_version`, which is
+  unset under `node dist/index.js` and made production report a stale `0.1.0`.
+
+### Changed
+
+- **Docs:** the README setup guide now **inlines the table-creation SQL** with a
+  "run this before you deploy" callout (and mirrors it in `docs/DEPLOYMENT.md`),
+  so the Supabase schema step can't be missed.
+
 ## [1.0.0] - 2026-07-14
 
 First stable release — the complete, self-hostable keep-alive bot.
