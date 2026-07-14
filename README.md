@@ -208,21 +208,17 @@ Tagged, semver-versioned GitHub Releases are cut automatically:
 publishes a Release with notes from the [CHANGELOG](CHANGELOG.md). See the
 "Releasing" section of [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## Build roadmap
+## Changelog
 
-NeoBot is built phase by phase (see [`masterdoc (2).md`](<masterdoc (2).md>) §18):
+**v1.0.0** — first stable release. The complete keep-alive bot: a resilient
+Mineflayer connection with reason-aware reconnect, a pluggable human-like
+behavior engine (17 behaviors) with hazard self-preservation and auto Safe Mode,
+a React dashboard (setup wizard, live view + minimap, logs, config), optional
+Supabase persistence and Discord control, a memory watchdog + Aternos-style
+hibernation handling for free-tier survival, one-click Render deploy, and a live
+end-to-end test suite.
 
-- [x] **Phase 1 — Scaffolding**: repo structure, toolchain, CI, Docker, OSS hygiene
-- [x] **Phase 2 — Core connection MVP**: connection manager, kick-reason parsing, reconnect/backoff, public `/status.json`
-- [x] **Phase 3 — Behavior engine core**: pluggable behaviors (walk/jumpLook/pathfindRandom/chat), human-like movement, always-on player-presence pause
-- [x] **Phase 4 — Extended behaviors + hazards**: mine/swim/sneak/boat/doors/fish/eat/sleep/lookAt/itemDrop, block-interaction modes, lava/drowning/fall/mob self-preservation
-- [x] **Phase 5 — Supabase persistence**: config/live-state/events/sessions repositories with in-memory fallback, hybrid bootstrap-then-source-of-truth
-- [x] **Phase 6 — Dashboard backend**: `/api/*`, three toggleable auth layers, rate limiting, setup wizard, control actions, Socket.IO live bridge
-- [x] **Phase 7 — Dashboard frontend**: React + Vite + Tailwind SPA (login, setup wizard, live dashboard with 2D minimap, logs, config export/import), served by Express
-- [x] **Phase 8 — Discord bot**: slash commands (`/status`, `/pause`, `/restart`, …), per-event push alerts, dashboard + Discord alert toggles
-- [x] **Phase 9 — Resource management**: memory watchdog (tiered recovery), Safe Mode auto dial-back, Aternos-style hibernation detection, self-ping fallback
-- [x] **Phase 10 — Docs & release automation**: Deploy-to-Render Blueprint, semver release workflow, expanded architecture & deployment docs
-- [x] **Phase 11 — Polish & live QA**: live end-to-end suites (real bot ↔ flying-squid world, real HTTP/Socket.IO, Playwright, gated Discord/Supabase), optional live-status badge (`/badge.json`)
+Full history: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Contributing
 

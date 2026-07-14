@@ -1,6 +1,6 @@
 {
   "name": "neobot",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A Mineflayer-based anti-AFK bot that keeps a Minecraft server alive, deployed as a self-hostable, open-source, one-click template.",
   "type": "module",
   "license": "MIT",

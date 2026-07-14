@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-14
+
+First stable release — the complete, self-hostable keep-alive bot.
+
 ### Added
 
 - **Phase 11 — Polish & live QA.** A first full end-to-end shakedown against real
