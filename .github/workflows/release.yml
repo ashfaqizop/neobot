@@ -1,0 +1,46 @@
+name: Release
+
+# Cut a GitHub Release when a semver tag is pushed:
+#   npm version <patch|minor|major>   # or edit package.json + CHANGELOG manually
+#   git push --follow-tags
+# The Docker image is intentionally NOT published (masterdoc §3/§14) — this only
+# creates the GitHub Release with notes pulled from CHANGELOG.md.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, test & publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Release gate: never publish a tag that doesn't build and pass tests.
+      - name: Build & test
+        run: |
+          npm run build
+          npm test
+
+      - name: Extract release notes from CHANGELOG
+        run: node scripts/extract-changelog.mjs "${GITHUB_REF_NAME}" > RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

@@ -110,10 +110,30 @@ NeoBot is built to survive unattended on a 512 MB free tier (masterdoc §12):
   internal ping of `/status.json`. It only guards in-game AFK-kicks — it **cannot
   revive an already-slept host**, so UptimeRobot remains the primary keep-alive.
 
-## Render (planned)
+## Deploy to Render (one-click)
 
-A one-click **Deploy to Render** button and a `render.yaml` Blueprint
-(`autoDeploy: false` for template installs) are added in Phase 10.
+The repo ships a [`render.yaml`](../render.yaml) Blueprint, so you can stand up a
+free instance in a couple of clicks:
+
+1. Click **[Deploy to Render](https://render.com/deploy?repo=https://github.com/ashfaqizop/neobot)**
+   (or, in the Render dashboard, **New → Blueprint** and point it at your fork).
+   Render builds the image from the root `Dockerfile` (`runtime: docker`,
+   `plan: free`) and injects `PORT` automatically.
+2. On the Blueprint screen, fill in any `sync: false` env vars you want to set now
+   (`MC_HOST`, `MC_USERNAME`, `SUPABASE_URL`/`SUPABASE_KEY`, `DISCORD_BOT_TOKEN`/
+   `DISCORD_GUILD_ID`) — or leave them blank and configure everything from the
+   in-app **setup wizard** later. `SESSION_SECRET` is generated for you.
+3. Once live, create your admin account via the wizard, then point
+   [UptimeRobot](https://uptimerobot.com/) at `https://<your-service>.onrender.com/status.json`
+   (5-minute interval) to keep the free service awake.
+
+**Why `autoDeployTrigger: off`?** The Blueprint disables auto-deploy so a template
+install doesn't redeploy on every upstream commit. In your own fork, set it to
+`commit` (or `checksPass`) if you want pushes to redeploy.
+
+> Render's free web services sleep after ~15 minutes of no **inbound** traffic —
+> that's exactly what the UptimeRobot ping prevents. The internal self-ping cannot
+> wake an already-slept host, so UptimeRobot remains the primary keep-alive.
 
 ## Local / prod-parity
 

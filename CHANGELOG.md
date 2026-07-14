@@ -8,6 +8,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Phase 10 — Docs & release automation.** Made NeoBot deployable and releasable
+  by others (masterdoc §18.10):
+  - **Deploy to Render.** A `render.yaml` Blueprint (`runtime: docker`,
+    `plan: free`, `autoDeployTrigger: off`, `healthCheckPath: /healthz`,
+    `SESSION_SECRET` generated + `sync: false` placeholders for the rest) and a
+    one-click **Deploy to Render** button in the README.
+  - **Semver release workflow** (`.github/workflows/release.yml`): pushing a
+    `v*.*.*` tag builds, tests, and publishes a GitHub Release with notes
+    extracted from the CHANGELOG (`scripts/extract-changelog.mjs`). The Docker
+    image stays build-only (not published).
+  - **Real architecture & deployment docs** — `docs/ARCHITECTURE.md` and the
+    Render section of `docs/DEPLOYMENT.md` promoted from stubs; a "Releasing"
+    guide in `CONTRIBUTING.md`; a live CI status badge in the README.
+  - Bumped `actions/checkout` and `actions/setup-node` to v5 (Node 24), clearing
+    the runner deprecation warning.
+
 - **Phase 9 — Resource management, Safe Mode & hibernation.** The resilience
   layer for unattended runs on a 512 MB free tier (masterdoc §12, §6.3, §10):
   - **Memory watchdog** (`src/watchdog/memoryWatchdog.ts`): polls process RSS and,

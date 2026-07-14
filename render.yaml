@@ -1,0 +1,43 @@
+# Render Blueprint (Infrastructure as Code) for NeoBot.
+# One-click deploy: https://render.com/deploy?repo=https://github.com/ashfaqizop/neobot
+#
+# NeoBot boots with ZERO credentials — after the service is up, do the rest from
+# the in-app first-run setup wizard (Minecraft server, admin account, Supabase,
+# Discord). Only a handful of secrets belong in the environment; everything else
+# is configured in the dashboard. Render injects PORT automatically.
+#
+# `autoDeployTrigger: off` is deliberate for a template: forks/installs shouldn't
+# auto-redeploy on every upstream commit. Flip it to `commit` for your own fork.
+services:
+  - type: web
+    name: neobot
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    autoDeployTrigger: off
+    # Public keep-alive / health endpoint (masterdoc §10). Point UptimeRobot at
+    # /status.json to keep the free service awake (Render sleeps it after ~15m
+    # of no inbound traffic — an internal self-ping cannot wake a slept host).
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Signs dashboard session cookies — generated once, kept stable so logins
+      # survive restarts.
+      - key: SESSION_SECRET
+        generateValue: true
+      # Filled in from the Render dashboard on first deploy (or leave blank and
+      # use the in-app setup wizard). All optional — the app runs without them.
+      - key: MC_HOST
+        sync: false
+      - key: MC_USERNAME
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false

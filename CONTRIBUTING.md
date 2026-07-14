@@ -48,6 +48,21 @@ later phase).
 - Prefer small, testable modules.
 - Run `npm run format` (Prettier) before committing.
 
+## Releasing (maintainers)
+
+Releases are semver-tagged and cut automatically by the
+[release workflow](.github/workflows/release.yml):
+
+1. Move the `## [Unreleased]` items in [`CHANGELOG.md`](CHANGELOG.md) under a new
+   `## [x.y.z] - YYYY-MM-DD` heading.
+2. Bump the version and tag it: `npm version <patch|minor|major>` (this updates
+   `package.json` and creates a `vX.Y.Z` tag).
+3. Push with tags: `git push --follow-tags`.
+
+Pushing a `v*.*.*` tag triggers the workflow, which builds, tests, and publishes a
+GitHub Release with notes extracted from the CHANGELOG. The Docker image is **not**
+published to any registry (v1 keeps it build-only).
+
 ## Reporting bugs & requesting features
 
 Use the issue templates. For security issues, **do not** open a public issue —

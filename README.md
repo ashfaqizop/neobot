@@ -6,10 +6,14 @@
   <p><strong>A Mineflayer-based anti-AFK bot that keeps a Minecraft server alive — self-hostable, open-source, one-click deployable.</strong></p>
 
   <p>
+    <a href="https://github.com/ashfaqizop/neobot/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ashfaqizop/neobot/actions/workflows/ci.yml/badge.svg" /></a>
     <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-4fd8ff" />
     <img alt="Node 22" src="https://img.shields.io/badge/node-22.x-3c873a" />
     <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6" />
-    <img alt="Status: Phase 7" src="https://img.shields.io/badge/build-Phase%207%20dashboard-4fd8ff" />
+  </p>
+
+  <p>
+    <a href="https://render.com/deploy?repo=https://github.com/ashfaqizop/neobot"><img alt="Deploy to Render" src="https://render.com/images/deploy-to-render-button.svg" /></a>
   </p>
 </div>
 
@@ -79,8 +83,19 @@ Socket.IO to the backend on port 3000.
 
 ## Deployment
 
-A **"Deploy to Render"** one-click button and Render Blueprint (`render.yaml`)
-are added in Phase 10. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+Click **[Deploy to Render](https://render.com/deploy?repo=https://github.com/ashfaqizop/neobot)**
+(or the button above) to spin up a free instance from the included
+[`render.yaml`](render.yaml) Blueprint, then point [UptimeRobot](https://uptimerobot.com/)
+at `/status.json` to keep it awake. Full instructions — including Supabase and
+Discord — are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+## Releasing
+
+Tagged, semver-versioned GitHub Releases are cut automatically:
+`npm version <patch|minor|major>` then `git push --follow-tags` fires the
+[release workflow](.github/workflows/release.yml), which builds, tests, and
+publishes a Release with notes from the [CHANGELOG](CHANGELOG.md). See the
+"Releasing" section of [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Build roadmap
 
@@ -95,7 +110,7 @@ NeoBot is built phase by phase (see [`masterdoc (2).md`](<masterdoc (2).md>) §1
 - [x] **Phase 7 — Dashboard frontend**: React + Vite + Tailwind SPA (login, setup wizard, live dashboard with 2D minimap, logs, config export/import), served by Express
 - [x] **Phase 8 — Discord bot**: slash commands (`/status`, `/pause`, `/restart`, …), per-event push alerts, dashboard + Discord alert toggles
 - [x] **Phase 9 — Resource management**: memory watchdog (tiered recovery), Safe Mode auto dial-back, Aternos-style hibernation detection, self-ping fallback
-- [ ] Phase 10 — Docs & release automation
+- [x] **Phase 10 — Docs & release automation**: Deploy-to-Render Blueprint, semver release workflow, expanded architecture & deployment docs
 - [ ] Phase 11 — Polish
 
 ## Contributing
