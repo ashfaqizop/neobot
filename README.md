@@ -51,6 +51,97 @@ TypeScript (strict) · Node 22 · `mineflayer` + `mineflayer-pathfinder` · Expr
 Socket.IO · React + Vite + Tailwind · Supabase (Postgres) · `discord.js` ·
 `pino` · Vitest · Docker.
 
+## Setup — step by step
+
+Get NeoBot keeping your server (and its own host) alive. You can **deploy it free
+on Render** or **run it locally** — both paths end at the same in-app setup
+wizard. Steps 5–6 are optional.
+
+### 1. What you'll need
+
+- **A Minecraft server to keep alive.** NeoBot connects in **offline
+  (unauthenticated) mode**, so point it at an **offline-mode** server — typical
+  for the free / Aternos-style hosts you'd want to keep awake. Have its
+  **host/IP**, **port** (default `25565`), and (optionally) **version** ready.
+- **Node.js 22+** — only if running locally (`node -v` to check).
+- *Optional:* a free **Render** account (always-on hosting), **UptimeRobot**
+  (keep-alive), **Supabase** (durable data), and/or a **Discord** bot.
+
+### 2. Get NeoBot running
+
+#### Option A — Deploy free on Render (recommended; stays online 24/7)
+
+1. Click **[Deploy to Render](https://render.com/deploy?repo=https://github.com/ashfaqizop/neobot)**
+   (or fork the repo, then in Render: **New → Blueprint → your fork**).
+2. Render builds the Docker image from the included [`render.yaml`](render.yaml)
+   and gives you a URL like `https://your-neobot.onrender.com`. Leave the
+   optional env vars blank for now — you'll configure everything in the wizard.
+
+#### Option B — Run locally
+
+```bash
+git clone https://github.com/ashfaqizop/neobot neobot && cd neobot
+npm install
+npm run build
+npm start                 # serves the dashboard on http://localhost:3000
+```
+
+> For development with hot-reload, use `npm run dev` (backend) + `npm run dev:web`
+> (Vite) side by side instead — see [Quick start (development)](#quick-start-development).
+
+### 3. Create your admin & point the bot at your server (setup wizard)
+
+Open the dashboard — `https://<your-service>` (Render) or `http://localhost:3000`
+(local). On first run it shows the **setup wizard**:
+
+1. **Admin** — choose a username + password (min 6 chars). This is your dashboard login.
+2. **Connection** — enter your Minecraft server **host**, **port**, and the bot's
+   in-game **username**. Leave **version** blank to auto-detect.
+3. **Behavior** — keep the defaults, or tune which anti-AFK behaviors run.
+4. **Security** — optionally enable a shareable token-URL and/or an IP allowlist.
+5. **Review → Finish.** NeoBot creates your admin, saves the config, and the bot
+   starts connecting. Sign in.
+
+You should now see the live dashboard: status **connected**, a current activity
+ticking, and a 2D minimap.
+
+### 4. Keep the host awake (free hosts only)
+
+Free web hosts sleep after ~15 min of no **inbound** traffic. Point a monitor at
+NeoBot's public status endpoint so it never sleeps:
+
+1. Create a free **[UptimeRobot](https://uptimerobot.com/)** HTTP(s) monitor.
+2. URL: `https://<your-service>.onrender.com/status.json`
+3. Interval: **5 minutes** (comfortably inside Render's 15-minute window).
+
+> Local runs don't sleep, so you can skip this step.
+
+### 5. (Optional) Durable data with Supabase
+
+By default, data lives in memory and resets on restart. For durable config, logs,
+and session history:
+
+1. Create a free project at [supabase.com](https://supabase.com/).
+2. In the project's **SQL Editor**, paste the contents of
+   [`src/db/schema.sql`](src/db/schema.sql) and click **Run** (creates six tables).
+3. Set `SUPABASE_URL` and `SUPABASE_KEY` (use the **service_role** key) and restart —
+   on Render via the service's **Environment** tab; locally via a `.env` started
+   with `node --env-file=.env dist/index.js`.
+
+### 6. (Optional) Discord alerts & control
+
+1. Create an application + **Bot** at the
+   [Discord Developer Portal](https://discord.com/developers/applications); copy the **bot token**.
+2. Invite the bot to your server with the `bot` + `applications.commands` scopes.
+3. Set `DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` (optionally
+   `DISCORD_ALERT_CHANNEL_ID`) and restart. Slash commands (`/status`, `/pause`,
+   `/restart`, `/alerts`, …) register automatically.
+
+> **Secrets** (`SUPABASE_KEY`, `DISCORD_BOT_TOKEN`, `SESSION_SECRET`) are
+> **environment-only** — never enter them in the wizard and never commit them. On
+> Render set them in the dashboard; locally keep them in a gitignored `.env`. Full
+> reference: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ## Quick start (development)
 
 ```bash
@@ -131,7 +222,7 @@ NeoBot is built phase by phase (see [`masterdoc (2).md`](<masterdoc (2).md>) §1
 - [x] **Phase 8 — Discord bot**: slash commands (`/status`, `/pause`, `/restart`, …), per-event push alerts, dashboard + Discord alert toggles
 - [x] **Phase 9 — Resource management**: memory watchdog (tiered recovery), Safe Mode auto dial-back, Aternos-style hibernation detection, self-ping fallback
 - [x] **Phase 10 — Docs & release automation**: Deploy-to-Render Blueprint, semver release workflow, expanded architecture & deployment docs
-- [ ] Phase 11 — Polish
+- [x] **Phase 11 — Polish & live QA**: live end-to-end suites (real bot ↔ flying-squid world, real HTTP/Socket.IO, Playwright, gated Discord/Supabase), optional live-status badge (`/badge.json`)
 
 ## Contributing
 
